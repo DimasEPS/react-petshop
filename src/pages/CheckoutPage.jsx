@@ -1,237 +1,402 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import {
+  ArrowLeft, ChevronRight, CheckCircle2, MapPin, Truck,
+  CreditCard, ShieldCheck, Package, User, Phone, Home,
+  Building2, Map, Hash, Clock, Zap, Check, PawPrint,
+  Lock
+} from "lucide-react";
 
-const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  .co-page { min-height: 100vh; background: #F8F7F4; font-family: 'DM Sans','Helvetica Neue',sans-serif; color: #111; }
-  .co-hero { background: #1A1A2E; padding: 40px 32px 32px; }
-  .co-hero-inner { max-width: 1100px; margin: 0 auto; }
-  .co-breadcrumb { font-size: 13px; color: #7A7A9A; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-  .co-breadcrumb a { color: #C8963E; text-decoration: none; }
-  .co-breadcrumb a:hover { text-decoration: underline; }
-  .co-hero h1 { font-family: 'Playfair Display',Georgia,serif; font-size: 36px; font-weight: 700; color: #fff; letter-spacing: -0.5px; line-height: 1.2; }
-  .co-steps { display: flex; align-items: center; margin-top: 28px; }
-  .co-step { display: flex; align-items: center; gap: 10px; }
-  .co-step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
-  .co-step-num.done { background: #C8963E; color: #fff; }
-  .co-step-num.active { background: #fff; color: #1A1A2E; }
-  .co-step-num.pending { background: #2A2A48; color: #5A5570; border: 1px solid #3A3A58; }
-  .co-step-label { font-size: 13px; font-weight: 500; white-space: nowrap; }
-  .co-step-label.active { color: #fff; }
-  .co-step-label.done { color: #C8963E; }
-  .co-step-label.pending { color: #5A5570; }
-  .co-step-line { flex: 1; height: 1px; margin: 0 14px; min-width: 32px; }
-  .co-step-line.done { background: #C8963E; }
-  .co-step-line.pending { background: #3A3A58; }
-
-  .co-body { max-width: 1100px; margin: 40px auto; padding: 0 32px; display: grid; grid-template-columns: 1fr 360px; gap: 28px; align-items: start; }
-  .co-card { background: #fff; border-radius: 16px; padding: 36px; border: 1px solid #E8E6E1; }
-  .co-card-title { font-family: 'Playfair Display',Georgia,serif; font-size: 22px; font-weight: 600; color: #1A1A2E; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #F0ECE4; letter-spacing: -0.3px; }
-
-  .co-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  .co-full { grid-column: 1 / -1; }
-  .co-label { display: block; font-size: 11px; font-weight: 600; color: #9A9590; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-  .co-input { width: 100%; padding: 13px 16px; border: 1.5px solid #E8E6E1; border-radius: 10px; font-size: 15px; font-family: 'DM Sans',sans-serif; color: #1A1A2E; background: #fff; outline: none; transition: border-color .2s, box-shadow .2s; }
-  .co-input:focus { border-color: #C8963E; box-shadow: 0 0 0 3px rgba(200,150,62,.1); }
-  .co-textarea { resize: vertical; min-height: 88px; }
-
-  .co-options { display: flex; flex-direction: column; gap: 12px; }
-  .co-opt { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border: 1.5px solid #E8E6E1; border-radius: 12px; cursor: pointer; transition: all .2s; background: #fff; }
-  .co-opt:hover { border-color: #C8963E; background: #FDFAF5; }
-  .co-opt.sel { border-color: #1A1A2E; background: #F8F7F4; }
-  .co-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #D1CEC7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color .2s; }
-  .co-opt.sel .co-radio { border-color: #1A1A2E; }
-  .co-radio-inner { width: 10px; height: 10px; border-radius: 50%; background: #1A1A2E; opacity: 0; transition: opacity .2s; }
-  .co-opt.sel .co-radio-inner { opacity: 1; }
-  .co-opt-body { flex: 1; }
-  .co-opt-title { font-size: 15px; font-weight: 600; color: #1A1A2E; margin-bottom: 2px; }
-  .co-opt-sub { font-size: 13px; color: #9A9590; }
-  .co-opt-price { font-size: 15px; font-weight: 600; color: #1A1A2E; }
-
-  .co-pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  .co-actions { display: flex; gap: 12px; margin-top: 32px; padding-top: 28px; border-top: 1px solid #F0ECE4; }
-  .co-back { padding: 13px 22px; border: 1.5px solid #E8E6E1; border-radius: 10px; background: #fff; color: #5A5550; font-size: 14px; font-weight: 600; font-family: 'DM Sans',sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: border-color .2s, color .2s; }
-  .co-back:hover { border-color: #1A1A2E; color: #1A1A2E; }
-  .co-next { flex: 1; padding: 14px; background: #1A1A2E; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; font-family: 'DM Sans',sans-serif; cursor: pointer; transition: background .2s, transform .15s; }
-  .co-next:hover { background: #C8963E; transform: translateY(-1px); }
-  .co-pay-btn { flex: 1; padding: 15px; background: #C8963E; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; font-family: 'DM Sans',sans-serif; cursor: pointer; transition: all .2s; letter-spacing: .2px; }
-  .co-pay-btn:hover { background: #A87830; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(200,150,62,.3); }
-
-  .co-summary { background: #fff; border-radius: 16px; padding: 32px; border: 1px solid #E8E6E1; position: sticky; top: 88px; }
-  .co-sum-title { font-family: 'Playfair Display',Georgia,serif; font-size: 18px; font-weight: 600; color: #1A1A2E; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #F0ECE4; }
-  .co-item { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
-  .co-item-thumb { width: 56px; height: 56px; border-radius: 10px; background: linear-gradient(135deg,#E8E6E1,#D1CEC7); border: 1px solid #E8E6E1; flex-shrink: 0; }
-  .co-item-name { font-size: 14px; font-weight: 500; color: #1A1A2E; line-height: 1.4; margin-bottom: 3px; }
-  .co-item-qty { font-size: 12px; color: #9A9590; }
-  .co-item-price { font-size: 14px; font-weight: 600; color: #1A1A2E; margin-left: auto; flex-shrink: 0; padding-left: 8px; }
-  .co-divider { height: 1px; background: #F0ECE4; margin: 16px 0; }
-  .co-row { display: flex; justify-content: space-between; font-size: 14px; color: #5A5550; margin-bottom: 9px; }
-  .co-total { display: flex; justify-content: space-between; font-size: 17px; font-weight: 700; color: #1A1A2E; margin-top: 16px; padding-top: 16px; border-top: 2px solid #1A1A2E; }
-  .co-notice { margin-top: 18px; padding: 14px 15px; background: #F4F3F0; border-radius: 10px; font-size: 12px; color: #9A9590; line-height: 1.6; }
-
-  @media (max-width: 900px) {
-    .co-body { grid-template-columns: 1fr; padding: 0 20px; margin: 24px auto; }
-    .co-summary { position: static; }
-    .co-hero { padding: 28px 20px 24px; }
-    .co-hero h1 { font-size: 28px; }
-    .co-card { padding: 24px; }
-    .co-grid { grid-template-columns: 1fr; }
-    .co-pay-grid { grid-template-columns: 1fr; }
-    .co-steps { display: none; }
-  }
-`;
-
+/* ─── DATA ─────────────────────────────────────────────── */
 const cartItems = [
-  { id: 1, name: "Royal Canin Adult Cat 2kg", price: 185000, qty: 2 },
-  { id: 2, name: "Premium Dog Leash — Leather", price: 75000, qty: 1 },
+  { id: 1, name: "Royal Canin Adult Cat 2kg", price: 185000, qty: 2, emoji: "🐱" },
+  { id: 2, name: "Premium Dog Leash — Leather", price: 75000, qty: 1, emoji: "🐕" },
 ];
+
 const shippingOpts = [
-  { id: "jne-reg", label: "JNE Regular", sub: "Estimated 3–5 business days", price: 15000 },
-  { id: "jne-yes", label: "JNE YES — Next Day", sub: "Estimated 1 business day", price: 35000 },
-  { id: "sicepat", label: "SiCepat BEST", sub: "Estimated 2–3 business days", price: 12000 },
+  { id: "jne-reg", label: "JNE Regular", sub: "Estimasi 3–5 hari kerja", price: 15000, Icon: Package },
+  { id: "jne-yes", label: "JNE YES — Next Day", sub: "Estimasi 1 hari kerja", price: 35000, Icon: Zap, badge: "Tercepat" },
+  { id: "sicepat", label: "SiCepat BEST", sub: "Estimasi 2–3 hari kerja", price: 12000, Icon: Truck, badge: "Termurah" },
 ];
+
 const paymentOpts = [
-  { id: "qris", label: "QRIS", sub: "Scan & pay instantly" },
-  { id: "bca-va", label: "BCA Virtual Account", sub: "Transfer via BCA" },
-  { id: "gopay", label: "GoPay", sub: "via Midtrans" },
-  { id: "ovo", label: "OVO", sub: "via Midtrans" },
+  { id: "qris", label: "QRIS", sub: "Scan & bayar instan", emoji: "📱" },
+  { id: "bca-va", label: "BCA Virtual Account", sub: "Transfer via BCA", emoji: "🏦" },
+  { id: "gopay", label: "GoPay", sub: "via Midtrans", emoji: "💚" },
+  { id: "ovo", label: "OVO", sub: "via Midtrans", emoji: "💜" },
 ];
 
-const BackIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <polyline points="15 18 9 12 15 6"/>
-  </svg>
-);
-const CheckIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-    <polyline points="20 6 9 17 4 12"/>
-  </svg>
-);
+const fmtPrice = (n) => `Rp ${n.toLocaleString("id-ID")}`;
 
+/* ─── STEP INDICATOR ────────────────────────────────────── */
+const STEPS = [
+  { label: "Alamat", Icon: MapPin },
+  { label: "Pengiriman", Icon: Truck },
+  { label: "Pembayaran", Icon: CreditCard },
+];
+
+function StepBar({ step }) {
+  return (
+    <div style={{ background: "rgba(255,255,255,.06)", borderTop: "1px solid rgba(255,255,255,.08)" }}>
+      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "18px 24px", display: "flex", alignItems: "center" }}>
+        {STEPS.map(({ label, Icon }, i) => {
+          const done = step > i + 1;
+          const active = step === i + 1;
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                  background: done ? "#a8e6c3" : active ? "#fff" : "rgba(255,255,255,.08)",
+                  border: active ? "none" : done ? "none" : "1px solid rgba(255,255,255,.15)",
+                  transition: "all .3s",
+                }}>
+                  {done
+                    ? <Check size={16} color="#1a5c38" strokeWidth={2.5} />
+                    : <Icon size={15} color={active ? "#1a5c38" : "rgba(255,255,255,.35)"} strokeWidth={active ? 2.2 : 1.8} />
+                  }
+                </div>
+                <span style={{
+                  fontSize: 13, fontWeight: active ? 700 : 500,
+                  color: active ? "#fff" : done ? "#a8e6c3" : "rgba(255,255,255,.4)",
+                  display: window.innerWidth < 500 ? "none" : "inline",
+                }}>
+                  {label}
+                </span>
+              </div>
+              {i < 2 && (
+                <div style={{ flex: 1, height: 1, margin: "0 12px", background: done ? "#a8e6c3" : "rgba(255,255,255,.12)", borderRadius: 1, transition: "background .4s" }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── INPUT ─────────────────────────────────────────────── */
+function Input({ value, onChange, placeholder, as = "input", rows }) {
+  const [focus, setFocus] = useState(false);
+  const style = {
+    width: "100%", padding: "11px 14px",
+    border: `1.5px solid ${focus ? "#2d7a4f" : "#e5e7eb"}`,
+    borderRadius: 10, fontSize: 14, boxSizing: "border-box",
+    outline: "none", fontFamily: "inherit", color: "#1a1a2e",
+    background: "#fff", transition: "border .2s",
+    resize: as === "textarea" ? "vertical" : undefined,
+  };
+  return as === "textarea"
+    ? <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows || 3} style={style} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} />
+    : <input value={value} onChange={onChange} placeholder={placeholder} style={style} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} />;
+}
+
+/* ─── FIELD ─────────────────────────────────────────────── */
+function Field({ label, icon: Icon, full, children }) {
+  return (
+    <div style={full ? { gridColumn: "1 / -1" } : {}}>
+      <label style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".6px" }}>
+        {Icon && <Icon size={11} color="#2d7a4f" />} {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/* ─── SHIPPING OPTION ───────────────────────────────────── */
+function ShipOpt({ opt, selected, onSelect }) {
+  const [hov, setHov] = useState(false);
+  const { Icon } = opt;
+  return (
+    <div
+      onClick={() => onSelect(opt.id)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 14,
+        padding: "16px 18px", borderRadius: 12, cursor: "pointer",
+        border: `2px solid ${selected ? "#2d7a4f" : hov ? "#d1d5db" : "#e5e7eb"}`,
+        background: selected ? "linear-gradient(135deg,#f0fdf4,#e8f5ee)" : hov ? "#f9fafb" : "#fff",
+        transition: "all .2s", position: "relative",
+      }}
+    >
+      {opt.badge && (
+        <span style={{
+          position: "absolute", top: -8, right: 14,
+          background: opt.id === "jne-yes" ? "#1a5c38" : "#2d7a4f",
+          color: "#fff", fontSize: 10, fontWeight: 700,
+          padding: "2px 8px", borderRadius: 20, letterSpacing: ".3px",
+        }}>{opt.badge}</span>
+      )}
+      {/* Radio */}
+      <div style={{ width: 20, height: 20, borderRadius: "50%", border: `2px solid ${selected ? "#2d7a4f" : "#d1d5db"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "border .2s" }}>
+        {selected && <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#2d7a4f" }} />}
+      </div>
+      {/* Icon */}
+      <div style={{ width: 40, height: 40, borderRadius: 10, background: selected ? "#dcfce7" : "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .2s" }}>
+        <Icon size={18} color={selected ? "#2d7a4f" : "#9ca3af"} strokeWidth={1.8} />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: "#1a1a2e", marginBottom: 2 }}>{opt.label}</div>
+        <div style={{ fontSize: 12, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
+          <Clock size={10} /> {opt.sub}
+        </div>
+      </div>
+      <div style={{ fontWeight: 800, fontSize: 15, color: selected ? "#2d7a4f" : "#374151", flexShrink: 0 }}>{fmtPrice(opt.price)}</div>
+    </div>
+  );
+}
+
+/* ─── PAYMENT OPTION ────────────────────────────────────── */
+function PayOpt({ opt, selected, onSelect }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onClick={() => onSelect(opt.id)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "14px 16px", borderRadius: 12, cursor: "pointer",
+        border: `2px solid ${selected ? "#2d7a4f" : hov ? "#d1d5db" : "#e5e7eb"}`,
+        background: selected ? "linear-gradient(135deg,#f0fdf4,#e8f5ee)" : hov ? "#f9fafb" : "#fff",
+        transition: "all .2s",
+      }}
+    >
+      <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${selected ? "#2d7a4f" : "#d1d5db"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        {selected && <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#2d7a4f" }} />}
+      </div>
+      <span style={{ fontSize: 22 }}>{opt.emoji}</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: "#1a1a2e" }}>{opt.label}</div>
+        <div style={{ fontSize: 11, color: "#9ca3af" }}>{opt.sub}</div>
+      </div>
+      {selected && <CheckCircle2 size={16} color="#2d7a4f" />}
+    </div>
+  );
+}
+
+/* ─── NAV BUTTONS ───────────────────────────────────────── */
+function NavBtns({ onBack, backLabel = "Kembali", onNext, nextLabel, isLast, total }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div style={{ display: "flex", gap: 12, marginTop: 28, paddingTop: 24, borderTop: "1px solid #f3f4f6" }}>
+      <button onClick={onBack} style={{
+        display: "flex", alignItems: "center", gap: 7,
+        padding: "12px 20px", border: "1.5px solid #e5e7eb",
+        borderRadius: 10, background: "#fff", color: "#6b7280",
+        fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+        transition: "all .2s",
+      }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = "#1a5c38"; e.currentTarget.style.color = "#1a5c38"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
+      >
+        <ArrowLeft size={15} /> {backLabel}
+      </button>
+      <button onClick={onNext}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: "13px", border: "none", borderRadius: 10,
+          background: isLast
+            ? (hov ? "#fbbf24" : "linear-gradient(135deg,#f59e0b,#fbbf24)")
+            : (hov ? "#1a5c38" : "linear-gradient(135deg,#1a5c38,#2d7a4f)"),
+          color: isLast ? "#1a1a2e" : "#fff",
+          fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+          boxShadow: isLast
+            ? (hov ? "0 8px 24px rgba(251,191,36,.4)" : "0 4px 14px rgba(245,158,11,.25)")
+            : (hov ? "0 8px 24px rgba(26,92,56,.35)" : "0 4px 14px rgba(26,92,56,.2)"),
+          transform: hov ? "translateY(-1px)" : "none",
+          transition: "all .2s",
+        }}
+      >
+        {isLast ? <Lock size={16} /> : null}
+        {isLast ? `Bayar ${fmtPrice(total)}` : nextLabel}
+        {!isLast && <ChevronRight size={16} />}
+      </button>
+    </div>
+  );
+}
+
+/* ─── ORDER SUMMARY ─────────────────────────────────────── */
+function OrderSummary({ sub, ship, total }) {
+  return (
+    <div style={{ background: "#fff", borderRadius: 18, padding: 28, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,.04)", position: "sticky", top: 24 }}>
+      <h3 style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a1a2e", margin: "0 0 20px", paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
+        Ringkasan Pesanan
+      </h3>
+
+      {cartItems.map(item => (
+        <div key={item.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+          <div style={{ width: 46, height: 46, borderRadius: 10, background: "#f3f4f6", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+            {item.emoji}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e", lineHeight: 1.4, marginBottom: 2 }}>{item.name}</div>
+            <div style={{ fontSize: 11, color: "#9ca3af" }}>Qty: {item.qty}</div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", flexShrink: 0, paddingLeft: 8 }}>{fmtPrice(item.price * item.qty)}</div>
+        </div>
+      ))}
+
+      <div style={{ height: 1, background: "#f3f4f6", margin: "16px 0" }} />
+
+      {[
+        { label: "Subtotal", value: fmtPrice(sub) },
+        { label: "Ongkos Kirim", value: ship ? fmtPrice(ship.price) : "—" },
+      ].map(r => (
+        <div key={r.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6b7280", marginBottom: 8 }}>
+          <span>{r.label}</span><span>{r.value}</span>
+        </div>
+      ))}
+
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, color: "#1a1a2e", marginTop: 14, paddingTop: 14, borderTop: "2px solid #1a1a2e", fontFamily: "'Quicksand', sans-serif" }}>
+        <span>Total</span>
+        <span style={{ color: "#2d7a4f" }}>{fmtPrice(total)}</span>
+      </div>
+
+      {/* Security badge */}
+      <div style={{ marginTop: 18, background: "#f0fdf4", borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, border: "1px solid #bbf7d0" }}>
+        <ShieldCheck size={16} color="#2d7a4f" flexShrink={0} />
+        <p style={{ fontSize: 11, color: "#6b7280", margin: 0, lineHeight: 1.6 }}>
+          Transaksi diamankan oleh <strong style={{ color: "#1a5c38" }}>Midtrans SSL</strong>. Data kamu terenkripsi end-to-end.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── MAIN PAGE ─────────────────────────────────────────── */
 const CheckoutPage = () => {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ name:"", phone:"", address:"", city:"", province:"", postalCode:"", shipping:"jne-reg", payment:"qris" });
+  const [form, setForm] = useState({
+    name: "", phone: "", address: "", city: "", province: "",
+    postalCode: "", shipping: "jne-reg", payment: "qris",
+  });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const sub = cartItems.reduce((a, b) => a + b.price * b.qty, 0);
   const ship = shippingOpts.find(s => s.id === form.shipping);
   const total = sub + (ship?.price || 0);
 
-  const stepLabels = ["Shipping Address","Delivery Method","Payment"];
-
   return (
-    <>
-      <style>{css}</style>
-      <div className="co-page">
-        <Navbar />
-        <div className="co-hero">
-          <div className="co-hero-inner">
-            <div className="co-breadcrumb">
-              <Link to="/">Home</Link><span>/</span>
-              <Link to="/cart">Cart</Link><span>/</span>
-              <span style={{color:"#fff"}}>Checkout</span>
+    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "'Nunito', sans-serif" }}>
+
+      {/* ── HEADER ── */}
+      <div style={{ background: "linear-gradient(135deg,#1a5c38,#2d7a4f)" }}>
+        <div style={{ maxWidth: 1060, margin: "0 auto", padding: "18px 24px" }}>
+          {/* Breadcrumb */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, fontSize: 12, color: "rgba(255,255,255,.5)" }}>
+            <Link to="/" style={{ color: "#a8e6c3", textDecoration: "none", fontWeight: 600 }}>Beranda</Link>
+            <ChevronRight size={12} />
+            <Link to="/cart" style={{ color: "#a8e6c3", textDecoration: "none", fontWeight: 600 }}>Keranjang</Link>
+            <ChevronRight size={12} />
+            <span style={{ color: "#fff" }}>Checkout</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <PawPrint size={20} color="#fff" />
             </div>
-            <h1>Checkout</h1>
-            <div className="co-steps">
-              {stepLabels.map((s, i) => {
-                const st = step > i+1 ? "done" : step===i+1 ? "active" : "pending";
-                return (
-                  <div key={i} className="co-step">
-                    <div className={`co-step-num ${st}`}>{st==="done" ? <CheckIcon/> : i+1}</div>
-                    <span className={`co-step-label ${st}`}>{s}</span>
-                    {i < stepLabels.length-1 && <div className={`co-step-line ${step>i+1?"done":"pending"}`}/>}
-                  </div>
-                );
-              })}
+            <div>
+              <h1 style={{ fontFamily: "'Quicksand', sans-serif", color: "#fff", margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: "-.02em" }}>Checkout</h1>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,.55)" }}>{cartItems.length} produk · {fmtPrice(total)}</span>
             </div>
           </div>
         </div>
-
-        <div className="co-body">
-          <div>
-            {step === 1 && (
-              <div className="co-card">
-                <h2 className="co-card-title">Shipping Address</h2>
-                <div className="co-grid">
-                  <div className="co-form-group"><label className="co-label">Full Name</label><input className="co-input" value={form.name} onChange={e=>set("name",e.target.value)} placeholder="John Doe"/></div>
-                  <div className="co-form-group"><label className="co-label">Phone Number</label><input className="co-input" value={form.phone} onChange={e=>set("phone",e.target.value)} placeholder="+62 8xx xxxx xxxx"/></div>
-                  <div className="co-full"><label className="co-label">Street Address</label><textarea className="co-input co-textarea" value={form.address} onChange={e=>set("address",e.target.value)} placeholder="Street name, block, house number, RT/RW..."/></div>
-                  <div><label className="co-label">City</label><input className="co-input" value={form.city} onChange={e=>set("city",e.target.value)} placeholder="Bandar Lampung"/></div>
-                  <div><label className="co-label">Province</label><input className="co-input" value={form.province} onChange={e=>set("province",e.target.value)} placeholder="Lampung"/></div>
-                  <div><label className="co-label">Postal Code</label><input className="co-input" value={form.postalCode} onChange={e=>set("postalCode",e.target.value)} placeholder="35111"/></div>
-                </div>
-                <div className="co-actions">
-                  <Link to="/cart" className="co-back"><BackIcon/> Back to Cart</Link>
-                  <button className="co-next" onClick={()=>setStep(2)}>Continue to Delivery</button>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="co-card">
-                <h2 className="co-card-title">Delivery Method</h2>
-                <div className="co-options">
-                  {shippingOpts.map(opt=>(
-                    <div key={opt.id} className={`co-opt${form.shipping===opt.id?" sel":""}`} onClick={()=>set("shipping",opt.id)}>
-                      <div className="co-radio"><div className="co-radio-inner"/></div>
-                      <div className="co-opt-body"><div className="co-opt-title">{opt.label}</div><div className="co-opt-sub">{opt.sub}</div></div>
-                      <div className="co-opt-price">Rp {opt.price.toLocaleString("id-ID")}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="co-actions">
-                  <button className="co-back" onClick={()=>setStep(1)}><BackIcon/> Back</button>
-                  <button className="co-next" onClick={()=>setStep(3)}>Continue to Payment</button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="co-card">
-                <h2 className="co-card-title">Payment Method</h2>
-                <p style={{fontSize:14,color:"#9A9590",marginBottom:24,lineHeight:1.6}}>Secured by Midtrans. All transactions are encrypted end-to-end.</p>
-                <div className="co-pay-grid">
-                  {paymentOpts.map(opt=>(
-                    <div key={opt.id} className={`co-opt${form.payment===opt.id?" sel":""}`} onClick={()=>set("payment",opt.id)}>
-                      <div className="co-radio"><div className="co-radio-inner"/></div>
-                      <div className="co-opt-body"><div className="co-opt-title">{opt.label}</div><div className="co-opt-sub">{opt.sub}</div></div>
-                    </div>
-                  ))}
-                </div>
-                <div className="co-actions">
-                  <button className="co-back" onClick={()=>setStep(2)}><BackIcon/> Back</button>
-                  <button className="co-pay-btn" onClick={()=>alert("Connect to backend to process.")}>
-                    Place Order — Rp {total.toLocaleString("id-ID")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="co-summary">
-            <h3 className="co-sum-title">Order Summary</h3>
-            {cartItems.map(item=>(
-              <div key={item.id} className="co-item">
-                <div className="co-item-thumb"/>
-                <div style={{flex:1}}>
-                  <div className="co-item-name">{item.name}</div>
-                  <div className="co-item-qty">Qty: {item.qty}</div>
-                </div>
-                <div className="co-item-price">Rp {(item.price*item.qty).toLocaleString("id-ID")}</div>
-              </div>
-            ))}
-            <div className="co-divider"/>
-            <div className="co-row"><span>Subtotal</span><span>Rp {sub.toLocaleString("id-ID")}</span></div>
-            <div className="co-row"><span>Delivery</span><span>{ship ? `Rp ${ship.price.toLocaleString("id-ID")}` : "—"}</span></div>
-            <div className="co-total"><span>Total</span><span>Rp {total.toLocaleString("id-ID")}</span></div>
-            <div className="co-notice">By placing your order you agree to our Terms of Service. Payments are secured by Midtrans SSL encryption.</div>
-          </div>
-        </div>
+        <StepBar step={step} />
       </div>
-    </>
+
+      {/* ── BODY ── */}
+      <div style={{ maxWidth: 1060, margin: "28px auto", padding: "0 20px 60px", display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, alignItems: "start" }}>
+
+        {/* ── LEFT PANEL ── */}
+        <div>
+
+          {/* STEP 1: Alamat */}
+          {step === 1 && (
+            <div style={{ background: "#fff", borderRadius: 18, padding: 32, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+              <div style={{ marginBottom: 24 }}>
+                <h2 style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 20, fontWeight: 800, color: "#1a1a2e", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <MapPin size={20} color="#2d7a4f" /> Alamat Pengiriman
+                </h2>
+                <p style={{ margin: 0, fontSize: 13, color: "#9ca3af" }}>Pastikan alamat sudah benar sebelum melanjutkan</p>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <Field label="Nama Lengkap" icon={User}>
+                  <Input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Nama penerima" />
+                </Field>
+                <Field label="No. Telepon" icon={Phone}>
+                  <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+62 8xx xxxx xxxx" />
+                </Field>
+                <Field label="Alamat Lengkap" icon={Home} full>
+                  <Input as="textarea" value={form.address} onChange={e => set("address", e.target.value)} placeholder="Nama jalan, blok, no. rumah, RT/RW..." rows={3} />
+                </Field>
+                <Field label="Kota" icon={Building2}>
+                  <Input value={form.city} onChange={e => set("city", e.target.value)} placeholder="Bandar Lampung" />
+                </Field>
+                <Field label="Provinsi" icon={Map}>
+                  <Input value={form.province} onChange={e => set("province", e.target.value)} placeholder="Lampung" />
+                </Field>
+                <Field label="Kode Pos" icon={Hash}>
+                  <Input value={form.postalCode} onChange={e => set("postalCode", e.target.value)} placeholder="35111" />
+                </Field>
+              </div>
+              <NavBtns
+                onBack={() => {}}
+                backLabel={<Link to="/cart" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 6 }}><ArrowLeft size={15} /> Keranjang</Link>}
+                onNext={() => setStep(2)}
+                nextLabel="Pilih Pengiriman"
+              />
+            </div>
+          )}
+
+          {/* STEP 2: Pengiriman */}
+          {step === 2 && (
+            <div style={{ background: "#fff", borderRadius: 18, padding: 32, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+              <div style={{ marginBottom: 24 }}>
+                <h2 style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 20, fontWeight: 800, color: "#1a1a2e", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Truck size={20} color="#2d7a4f" /> Metode Pengiriman
+                </h2>
+                <p style={{ margin: 0, fontSize: 13, color: "#9ca3af" }}>Pilih kurir yang sesuai dengan kebutuhanmu</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {shippingOpts.map(opt => (
+                  <ShipOpt key={opt.id} opt={opt} selected={form.shipping === opt.id} onSelect={v => set("shipping", v)} />
+                ))}
+              </div>
+              <NavBtns onBack={() => setStep(1)} onNext={() => setStep(3)} nextLabel="Pilih Pembayaran" />
+            </div>
+          )}
+
+          {/* STEP 3: Pembayaran */}
+          {step === 3 && (
+            <div style={{ background: "#fff", borderRadius: 18, padding: 32, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+              <div style={{ marginBottom: 24 }}>
+                <h2 style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 20, fontWeight: 800, color: "#1a1a2e", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <CreditCard size={20} color="#2d7a4f" /> Metode Pembayaran
+                </h2>
+                <p style={{ margin: 0, fontSize: 13, color: "#9ca3af" }}>Transaksi aman menggunakan Midtrans</p>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {paymentOpts.map(opt => (
+                  <PayOpt key={opt.id} opt={opt} selected={form.payment === opt.id} onSelect={v => set("payment", v)} />
+                ))}
+              </div>
+              <NavBtns
+                onBack={() => setStep(2)}
+                onNext={() => alert("Hubungkan ke backend untuk proses pembayaran.")}
+                isLast
+                total={total}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ── RIGHT: SUMMARY ── */}
+        <OrderSummary sub={sub} ship={ship} total={total} />
+      </div>
+    </div>
   );
 };
 

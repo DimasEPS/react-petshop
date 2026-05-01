@@ -1,243 +1,236 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Scissors, Hotel, ShoppingCart, User, Search, Menu, X, ChevronDown } from 'lucide-react';
 
-const Navbar = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function Navbar({ cartCount }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+  const [showLayanan, setShowLayanan] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const dropRef = useRef(null);
 
-  const navLinks = [
-    { to: "/", label: "Home" },
-    { to: "/products", label: "Products" },
-    { to: "/booking", label: "Grooming" },
-    { to: "/orders", label: "My Orders" },
-  ];
+  // Fungsi untuk menutup dropdown saat klik di luar area
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setShowLayanan(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Efek shadow saat scroll
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (search.trim()) navigate(`/products?search=${encodeURIComponent(search)}`);
+  };
 
   const isActive = (path) => location.pathname === path;
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
         .nav-root {
           position: sticky;
           top: 0;
           z-index: 1000;
-          background: rgba(248, 247, 244, 0.92);
+          background: rgba(255, 255, 255, 0.92);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid #E8E6E1;
+          border-bottom: 1px solid #e2e8f0;
+          transition: all 0.3s ease;
+          font-family: 'Plus Jakarta Sans', sans-serif;
         }
+        .nav-scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+        
         .nav-inner {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 0 32px;
-          height: 68px;
+          padding: 0 24px;
+          height: 72px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 24px;
         }
+
         .nav-logo {
-          font-family: 'Playfair Display', Georgia, serif;
           font-size: 22px;
-          font-weight: 700;
-          color: #1A1A2E;
+          font-weight: 800;
+          color: #0f172a;
           text-decoration: none;
-          letter-spacing: -0.3px;
-          flex-shrink: 0;
-        }
-        .nav-logo span {
-          color: #C8963E;
-        }
-        .nav-links {
           display: flex;
           align-items: center;
-          gap: 4px;
-          list-style: none;
-          margin: 0;
-          padding: 0;
+          gap: 8px;
         }
+        .nav-logo span { color: #1a7a4a; }
+
+        .nav-menu { display: flex; align-items: center; gap: 8px; }
+        
         .nav-link {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 14px;
-          font-weight: 500;
-          color: #5A5550;
           text-decoration: none;
-          padding: 8px 14px;
-          border-radius: 8px;
-          transition: color 0.2s, background 0.2s;
-          letter-spacing: 0.1px;
-        }
-        .nav-link:hover {
-          color: #1A1A2E;
-          background: #F0ECE4;
-        }
-        .nav-link.active {
-          color: #1A1A2E;
+          color: #64748b;
           font-weight: 600;
+          font-size: 14px;
+          padding: 8px 16px;
+          border-radius: 10px;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
-        .nav-actions {
+        .nav-link:hover { color: #1a7a4a; background: #f0fdf4; }
+        .nav-link.active { color: #1a7a4a; background: #e6f7ee; }
+
+        .search-container { position: relative; margin-right: 12px; }
+        .search-input {
+          background: #f1f5f9;
+          border: 1.5px solid transparent;
+          border-radius: 12px;
+          padding: 8px 12px 8px 38px;
+          font-size: 13px;
+          width: 180px;
+          transition: all 0.3s;
+          outline: none;
+        }
+        .search-input:focus { width: 240px; border-color: #1a7a4a; background: #fff; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+
+        .nav-actions { display: flex; align-items: center; gap: 10px; }
+        
+        .icon-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          border: 1.5px solid #e2e8f0;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #475569;
+          position: relative;
+          text-decoration: none;
+          transition: all 0.2s;
+        }
+        .icon-btn:hover { border-color: #1a7a4a; color: #1a7a4a; }
+        
+        .badge {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          background: #ef4444;
+          color: white;
+          font-size: 10px;
+          font-weight: 800;
+          padding: 2px 6px;
+          border-radius: 10px;
+          border: 2px solid white;
+        }
+
+        .dropdown-menu {
+          position: absolute;
+          top: 100%;
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 8px;
+          min-width: 180px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+          display: none;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .dropdown-menu.show { display: flex; }
+        .drop-item {
           display: flex;
           align-items: center;
           gap: 10px;
-          flex-shrink: 0;
-        }
-        .nav-icon-btn {
-          position: relative;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid #E8E6E1;
+          padding: 10px 12px;
           border-radius: 8px;
-          background: #fff;
-          cursor: pointer;
-          transition: border-color 0.2s, box-shadow 0.2s;
           text-decoration: none;
-          color: #1A1A2E;
-        }
-        .nav-icon-btn:hover {
-          border-color: #C8963E;
-          box-shadow: 0 2px 8px rgba(200,150,62,0.15);
-        }
-        .nav-badge {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          width: 18px;
-          height: 18px;
-          background: #C8963E;
-          border-radius: 50%;
-          font-size: 10px;
-          font-weight: 700;
-          color: #fff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .nav-cta {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 14px;
+          color: #475569;
           font-weight: 600;
-          background: #1A1A2E;
-          color: #fff;
-          padding: 9px 20px;
-          border-radius: 8px;
-          text-decoration: none;
-          letter-spacing: 0.1px;
-          transition: background 0.2s, transform 0.15s;
+          font-size: 13px;
         }
-        .nav-cta:hover {
-          background: #C8963E;
-          transform: translateY(-1px);
-        }
-        .nav-hamburger {
-          display: none;
-          flex-direction: column;
-          gap: 5px;
-          cursor: pointer;
-          background: none;
-          border: none;
-          padding: 6px;
-        }
-        .nav-hamburger span {
-          display: block;
-          width: 22px;
-          height: 2px;
-          background: #1A1A2E;
-          border-radius: 2px;
-          transition: all 0.25s;
-        }
-        .mobile-menu {
-          display: none;
-          position: fixed;
-          inset: 68px 0 0 0;
-          background: #F8F7F4;
-          z-index: 999;
-          padding: 24px 32px;
-          flex-direction: column;
-          gap: 4px;
-          border-top: 1px solid #E8E6E1;
-          animation: slideDown 0.2s ease;
-        }
-        .mobile-menu.open {
-          display: flex;
-        }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .mobile-link {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 17px;
-          font-weight: 500;
-          color: #1A1A2E;
-          text-decoration: none;
-          padding: 14px 0;
-          border-bottom: 1px solid #E8E6E1;
-          letter-spacing: -0.1px;
-        }
+        .drop-item:hover { background: #f8fafc; color: #1a7a4a; }
+
         @media (max-width: 768px) {
-          .nav-links { display: none; }
-          .nav-hamburger { display: flex; }
-          .nav-cta { display: none; }
-          .nav-inner { padding: 0 20px; }
+          .nav-menu, .search-container { display: none; }
         }
       `}</style>
 
-      <nav className="nav-root">
+      <nav className={`nav-root ${scrolled ? 'nav-scrolled' : ''}`}>
         <div className="nav-inner">
-          <Link to="/" className="nav-logo">Paw<span>Store</span></Link>
+          {/* Logo */}
+          <Link to="/" className="nav-logo">
+            <span>Paw</span>Mart
+          </Link>
 
-          <ul className="nav-links">
-            {navLinks.map((l) => (
-              <li key={l.to}>
-                <Link to={l.to} className={`nav-link${isActive(l.to) ? " active" : ""}`}>
-                  {l.label}
+          {/* Menu Desktop */}
+          <div className="nav-menu">
+            <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>Home</Link>
+            <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>Produk</Link>
+            
+            {/* Dropdown Layanan */}
+            <div style={{ position: 'relative' }} ref={dropRef}>
+              <button 
+                className="nav-link" 
+                onClick={() => setShowLayanan(!showLayanan)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Layanan <ChevronDown size={14} style={{ transform: showLayanan ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+              </button>
+              <div className={`dropdown-menu ${showLayanan ? 'show' : ''}`}>
+                <Link to="/booking" className="drop-item" onClick={() => setShowLayanan(false)}>
+                  <Scissors size={16} /> Grooming
                 </Link>
-              </li>
-            ))}
-          </ul>
+                <Link to="/layanan/pet-hotel" className="drop-item" onClick={() => setShowLayanan(false)}>
+                  <Hotel size={16} /> Pet Hotel
+                </Link>
+              </div>
+            </div>
 
+            <Link to="/orders" className={`nav-link ${isActive('/orders') ? 'active' : ''}`}>Pesanan</Link>
+          </div>
+
+          {/* Actions: Search & Icons */}
           <div className="nav-actions">
-            <Link to="/cart" className="nav-icon-btn" title="Cart">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <path d="M16 10a4 4 0 01-8 0"/>
-              </svg>
-              <span className="nav-badge">2</span>
+            <form onSubmit={handleSearch} className="search-container">
+              <Search size={16} className="search-icon" />
+              <input 
+                type="text" 
+                placeholder="Cari kebutuhan anabul..." 
+                className="search-input"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </form>
+
+            <Link to="/cart" className="icon-btn">
+              <ShoppingCart size={20} />
+              {cartCount > 0 && <span className="badge">{cartCount}</span>}
             </Link>
-            <Link to="/profile" className="nav-icon-btn" title="Profile">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+
+            <Link to="/profile" className="icon-btn">
+              <User size={20} />
             </Link>
-            <Link to="/checkout" className="nav-cta">Checkout</Link>
-            <button className="nav-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
-              <span style={{ transform: menuOpen ? "rotate(45deg) translate(5px, 5px)" : "none" }} />
-              <span style={{ opacity: menuOpen ? 0 : 1 }} />
-              <span style={{ transform: menuOpen ? "rotate(-45deg) translate(5px, -5px)" : "none" }} />
+
+            {/* Tombol Mobile */}
+            <button className="icon-btn" style={{ display: 'none' }} onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
       </nav>
-
-      <div className={`mobile-menu${menuOpen ? " open" : ""}`}>
-        {navLinks.map((l) => (
-          <Link key={l.to} to={l.to} className="mobile-link" onClick={() => setMenuOpen(false)}>
-            {l.label}
-          </Link>
-        ))}
-        <Link to="/profile" className="mobile-link" onClick={() => setMenuOpen(false)}>Account</Link>
-        <Link to="/cart" className="mobile-link" onClick={() => setMenuOpen(false)}>Cart (2)</Link>
-      </div>
     </>
   );
-};
-
-export default Navbar;
+}
