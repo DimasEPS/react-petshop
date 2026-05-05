@@ -12,7 +12,17 @@ export function AuthProvider({ children }) {
     try {
       const res = await authAPI.checkAuth();
       if (res.data.success) {
-        setUser(res.data.user);
+        const user = res.data.user;
+        setUser({
+          id: user.id,
+          name: user.userName,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+          city: user.city,
+          province: user.province,
+          bio: user.bio,
+        });
         setIsAuthenticated(true);
       } else {
         setUser(null);
@@ -33,7 +43,17 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await authAPI.login({ email, password });
     if (res.data.success) {
-      setUser(res.data.user);
+      const loggedUser = res.data.user;
+      setUser({
+        id: loggedUser.id,
+        name: loggedUser.userName,
+        email: loggedUser.email,
+        role: loggedUser.role,
+        phone: loggedUser.phone || "",
+        city: loggedUser.city || "",
+        province: loggedUser.province || "",
+        bio: loggedUser.bio || "",
+      });
       setIsAuthenticated(true);
     }
     return res.data;

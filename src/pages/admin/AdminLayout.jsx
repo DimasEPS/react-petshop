@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -71,10 +71,10 @@ function SidebarContent({ pathname, onNavigate }) {
               to={item.href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-accent text-accent-foreground font-semibold"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground font-medium"
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -117,6 +117,14 @@ function SidebarContent({ pathname, onNavigate }) {
 export default function AdminLayout() {
   const location = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Force dark mode for admin pages
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    return () => {
+      document.documentElement.classList.remove('dark');
+    };
+  }, []);
 
   return (
     <div className="flex h-screen bg-background">

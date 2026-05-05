@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./index.css";
 import App from "./App.jsx";
@@ -10,9 +11,11 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <TooltipProvider>
-          <App />
-        </TooltipProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <App />
+          </TooltipProvider>
+        </CartProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>

@@ -35,4 +35,56 @@ export const adminUsersAPI = {
   getDashboardStats: () => api.get("/admin/users/dashboard"),
 };
 
+// Shop Products API (public)
+export const shopProductsAPI = {
+  getAll: (params) => api.get("/shop/products", { params }),
+  getById: (id) => api.get(`/shop/products/${id}`),
+};
+
+// Cart API
+export const cartAPI = {
+  get: () => api.get("/shop/cart"),
+  add: (data) => api.post("/shop/cart", data),
+  update: (itemId, data) => api.put(`/shop/cart/${itemId}`, data),
+  remove: (itemId) => api.delete(`/shop/cart/${itemId}`),
+};
+
+// Orders API
+export const ordersAPI = {
+  getAll: () => api.get("/shop/orders"),
+  getById: (id) => api.get(`/shop/orders/${id}`),
+  create: (data) => api.post("/shop/orders", data),
+  cancel: (id) => api.put(`/shop/orders/${id}/cancel`),
+};
+
+// Address API
+export const addressAPI = {
+  getAll: () => api.get("/shop/address"),
+  add: (data) => api.post("/shop/address", data),
+  update: (id, data) => api.put(`/shop/address/${id}`, data),
+  remove: (id) => api.delete(`/shop/address/${id}`),
+  setDefault: (id) => api.put(`/shop/address/${id}/default`),
+};
+
+// Profile API
+export const profileAPI = {
+  get: () => api.get("/shop/profile"),
+  update: (data) => api.put("/shop/profile", data),
+  changePassword: (data) => api.put("/shop/profile/password", data),
+};
+
+// Booking API
+export const bookingAPI = {
+  getAll: () => api.get("/shop/booking"),
+  create: (data) => api.post("/shop/booking", data),
+  cancel: (id) => api.put(`/shop/booking/${id}/cancel`),
+  getSlots: (date) => api.get("/shop/booking/slots", { params: { date } }),
+};
+
+// Wishlist API
+export const wishlistAPI = {
+  get: () => api.get("/shop/wishlist"),
+  toggle: (productId) => api.post("/shop/wishlist/toggle", { productId }),
+};
+
 export default api;
