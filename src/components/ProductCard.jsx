@@ -36,7 +36,7 @@ export default function ProductCard({ product: p, onAddToCart, wishlist = [], on
         </div>
       </div>
       <div className="pc-body">
-        <div className="pc-cat">{p.hewan || p.category} · {p.kat || p.brand}</div>
+        <div className="pc-cat">{(Array.isArray(p.hewan) ? p.hewan.join(', ') : p.hewan) || (Array.isArray(p.category) ? p.category.join(', ') : p.category)} · {(Array.isArray(p.kat) ? p.kat.join(', ') : p.kat) || p.brand}</div>
         <div className="pc-name">{p.title || p.name}</div>
         <div className="pc-rating">
           <span className="stars">{starsHTML(p.rating || 0)}</span>

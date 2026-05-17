@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { bookingAPI } from '../../services/api';
+import { toast } from 'sonner';
 import {
   Cat, Dog, Rabbit, Scissors, Sparkles, Bath, Star,
   Clock, ChevronRight, ChevronLeft, CheckCircle2,
   CalendarDays, User, Phone, Weight, Info, PawPrint,
-  ShieldCheck, ArrowLeft
+  ShieldCheck, ArrowLeft, Check
 } from "lucide-react";
 
 /* ─── DATA ─────────────────────────────────────────────── */
@@ -49,7 +50,6 @@ const services = [
 ];
 
 const timeSlots = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
-const bookedSlots = ["10:00", "14:00"];
 
 const getNextDays = (n) => {
   const days = [];
@@ -288,6 +288,7 @@ function NavBtns({ onBack, onNext, nextLabel = "Lanjut", nextDisabled }) {
 }
 
 const BookingPage = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     service: "", date: "", time: "",
@@ -295,6 +296,21 @@ const BookingPage = () => {
     notes: "", ownerName: "", phone: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState([]);
+
+  useEffect(() => {
+    if (form.date) {
+      bookingAPI.getSlots(form.date)
+        .then(res => {
+          if (res.data.success) {
+            setBookedSlots(res.data.data);
+          }
+        })
+        .catch(err => console.error(err));
+    } else {
+      setBookedSlots([]);
+    }
+  }, [form.date]);
 
   const days = getNextDays(14);
   const selectedService = services.find(s => s.id === form.service);
@@ -613,7 +629,7 @@ const BookingPage = () => {
             <div style={{ background: "#e8f5ee", borderRadius: 12, padding: "14px 18px", marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 10, border: "1px solid #a8e6c3" }}>
               <ShieldCheck size={18} color="#2d7a4f" style={{ flexShrink: 0, marginTop: 1 }} />
               <p style={{ fontSize: 13, color: "#1a5c38", margin: 0, lineHeight: 1.6 }}>
-                <strong>Pembayaran di tempat</strong> — Cash atau transfer bank setelah konfirmasi dari admin PawMart.
+                Transaksi ini diamankan oleh <strong style={{ color: "#065f46" }}>Midtrans SSL</strong>. Berbagai metode pembayaran tersedia (QRIS, VA, E-Wallet).
               </p>
             </div>
 
@@ -631,20 +647,37 @@ const BookingPage = () => {
                     petWeight: form.petWeight,
                     notes: form.notes,
                     ownerName: form.ownerName,
-                    phone: form.phone
+                    phone: form.phone,
+                    price: selectedService.price,
                   };
                   const res = await bookingAPI.create(reqBody);
                   if (res.data.success) {
-                    setSubmitted(true);
+                    const snapToken = res.data.snapToken;
+                    if (snapToken && window.snap) {
+                      window.snap.pay(snapToken, {
+                        onSuccess: () => navigate("/orders"),
+                        onPending: () => {
+                          toast.info("Pembayaran menunggu konfirmasi. Silakan cek status di halaman pesanan.");
+                          navigate("/orders");
+                        },
+                        onError: () => {
+                          toast.error("Pembayaran gagal. Silakan coba bayar kembali dari halaman pesanan.");
+                          navigate("/orders");
+                        },
+                        onClose: () => navigate("/orders"),
+                      });
+                    } else {
+                      setSubmitted(true);
+                    }
                   } else {
-                    alert('Gagal: ' + res.data.message);
+                    toast.error('Gagal: ' + res.data.message);
                   }
                 } catch (err) {
                   console.error(err);
-                  alert('Terjadi kesalahan.');
+                  toast.error('Terjadi kesalahan.');
                 }
               }}
-              nextLabel={<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Check size={16} /> Konfirmasi Booking</div>}
+              nextLabel={<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Check size={16} /> Bayar & Konfirmasi</div>}
             />
           </div>
         )}

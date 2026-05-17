@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from '../../context/CartContext';
 import { ordersAPI } from '../../services/api';
+import { toast } from "sonner";
 import {
-  ArrowLeft, ChevronRight, CheckCircle2, MapPin, Truck,
-  CreditCard, ShieldCheck, Package, User, Phone, Home,
-  Building2, Map, Hash, Clock, Zap, Check, PawPrint,
-  Lock, ImageOff, QrCode, Landmark, Wallet, WalletCards
+  ArrowLeft, ChevronRight, MapPin, Truck,
+  ShieldCheck, Package, User, Phone, Home,
+  Building2, Map, Hash, Clock, Zap, Check,
+  Lock, ImageOff, ShoppingCart
 } from "lucide-react";
 
 const shippingOpts = [
@@ -15,53 +16,45 @@ const shippingOpts = [
   { id: "sicepat", label: "SiCepat BEST", sub: "Estimasi 2–3 hari kerja", price: 12000, Icon: Truck, badge: "Termurah" },
 ];
 
-const paymentOpts = [
-  { id: "qris", label: "QRIS", sub: "Scan & bayar instan", Icon: QrCode },
-  { id: "bca-va", label: "BCA Virtual Account", sub: "Transfer via BCA", Icon: Landmark },
-  { id: "gopay", label: "GoPay", sub: "via Midtrans", Icon: Wallet },
-  { id: "ovo", label: "OVO", sub: "via Midtrans", Icon: WalletCards },
-];
-
 const fmtPrice = (n) => `Rp ${n.toLocaleString("id-ID")}`;
 
 /* ─── STEP INDICATOR ────────────────────────────────────── */
 const STEPS = [
   { label: "Alamat", Icon: MapPin },
   { label: "Pengiriman", Icon: Truck },
-  { label: "Pembayaran", Icon: CreditCard },
 ];
 
 function StepBar({ step }) {
   return (
-    <div style={{ background: "rgba(255,255,255,.06)", borderTop: "1px solid rgba(255,255,255,.08)" }}>
-      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "18px 24px", display: "flex", alignItems: "center" }}>
+    <div className="bg-white/5 border-t border-white/10">
+      <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
         {STEPS.map(({ label, Icon }, i) => {
           const done = step > i + 1;
           const active = step === i + 1;
           return (
-            <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                  background: done ? "#a8e6c3" : active ? "#fff" : "rgba(255,255,255,.08)",
-                  border: active ? "none" : done ? "none" : "1px solid rgba(255,255,255,.15)",
-                  transition: "all .3s",
-                }}>
-                  {done
-                    ? <Check size={16} color="#1a5c38" strokeWidth={2.5} />
-                    : <Icon size={15} color={active ? "#1a5c38" : "rgba(255,255,255,.35)"} strokeWidth={active ? 2.2 : 1.8} />
-                  }
+            <div key={i} className="flex items-center flex-1 last:flex-none">
+              <div className="flex items-center gap-2.5 shrink-0">
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all ${
+                  done ? 'bg-green-300 border-none' : 
+                  active ? 'bg-white border-none shadow-md shadow-white/20' : 
+                  'bg-white/10 border border-white/20'
+                }`}>
+                  {done ? (
+                    <Check size={16} className="text-green-900" strokeWidth={2.5} />
+                  ) : (
+                    <Icon size={15} className={active ? "text-green-800" : "text-white/40"} strokeWidth={active ? 2.2 : 1.8} />
+                  )}
                 </div>
-                <span style={{
-                  fontSize: 13, fontWeight: active ? 700 : 500,
-                  color: active ? "#fff" : done ? "#a8e6c3" : "rgba(255,255,255,.4)",
-                  display: window.innerWidth < 500 ? "none" : "inline",
-                }}>
+                <span className={`text-xs sm:text-sm hidden sm:inline ${
+                  active ? 'font-bold text-white' : 
+                  done ? 'font-medium text-green-300' : 
+                  'font-medium text-white/40'
+                }`}>
                   {label}
                 </span>
               </div>
-              {i < 2 && (
-                <div style={{ flex: 1, height: 1, margin: "0 12px", background: done ? "#a8e6c3" : "rgba(255,255,255,.12)", borderRadius: 1, transition: "background .4s" }} />
+              {i < STEPS.length - 1 && (
+                <div className={`flex-1 h-px mx-3 sm:mx-4 transition-colors ${done ? 'bg-green-300' : 'bg-white/15'}`} />
               )}
             </div>
           );
@@ -73,26 +66,20 @@ function StepBar({ step }) {
 
 /* ─── INPUT ─────────────────────────────────────────────── */
 function Input({ value, onChange, placeholder, as = "input", rows }) {
-  const [focus, setFocus] = useState(false);
-  const style = {
-    width: "100%", padding: "11px 14px",
-    border: `1.5px solid ${focus ? "#2d7a4f" : "#e5e7eb"}`,
-    borderRadius: 10, fontSize: 14, boxSizing: "border-box",
-    outline: "none", fontFamily: "inherit", color: "#1a1a2e",
-    background: "#fff", transition: "border .2s",
-    resize: as === "textarea" ? "vertical" : undefined,
-  };
-  return as === "textarea"
-    ? <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows || 3} style={style} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} />
-    : <input value={value} onChange={onChange} placeholder={placeholder} style={style} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} />;
+  const baseClasses = "w-full px-4 py-3 border-[1.5px] border-slate-200 rounded-xl text-sm outline-none text-slate-900 bg-white transition-all focus:border-green-600 focus:ring-4 focus:ring-green-600/10 placeholder:text-slate-400";
+  return as === "textarea" ? (
+    <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows || 3} className={`${baseClasses} resize-y`} />
+  ) : (
+    <input value={value} onChange={onChange} placeholder={placeholder} className={baseClasses} />
+  );
 }
 
 /* ─── FIELD ─────────────────────────────────────────────── */
 function Field({ label, icon: Icon, full, children }) {
   return (
-    <div style={full ? { gridColumn: "1 / -1" } : {}}>
-      <label style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".6px" }}>
-        {Icon && <Icon size={11} color="#2d7a4f" />} {label}
+    <div className={full ? "col-span-1 md:col-span-2" : "col-span-1"}>
+      <label className="flex items-center gap-1.5 mb-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        {Icon && <Icon size={12} className="text-green-700" />} {label}
       </label>
       {children}
     </div>
@@ -101,116 +88,85 @@ function Field({ label, icon: Icon, full, children }) {
 
 /* ─── SHIPPING OPTION ───────────────────────────────────── */
 function ShipOpt({ opt, selected, onSelect }) {
-  const [hov, setHov] = useState(false);
   const { Icon } = opt;
   return (
     <div
       onClick={() => onSelect(opt.id)}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex", alignItems: "center", gap: 14,
-        padding: "16px 18px", borderRadius: 12, cursor: "pointer",
-        border: `2px solid ${selected ? "#2d7a4f" : hov ? "#d1d5db" : "#e5e7eb"}`,
-        background: selected ? "linear-gradient(135deg,#f0fdf4,#e8f5ee)" : hov ? "#f9fafb" : "#fff",
-        transition: "all .2s", position: "relative",
-      }}
+      className={`relative flex items-center gap-4 p-4 sm:p-5 rounded-2xl cursor-pointer border-2 transition-all hover:-translate-y-0.5 ${
+        selected 
+          ? "border-green-600 bg-gradient-to-br from-green-50 to-emerald-50 shadow-sm" 
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+      }`}
     >
       {opt.badge && (
-        <span style={{
-          position: "absolute", top: -8, right: 14,
-          background: opt.id === "jne-yes" ? "#1a5c38" : "#2d7a4f",
-          color: "#fff", fontSize: 10, fontWeight: 700,
-          padding: "2px 8px", borderRadius: 20, letterSpacing: ".3px",
-        }}>{opt.badge}</span>
+        <span className={`absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white tracking-wide shadow-sm ${
+          opt.id === "jne-yes" ? "bg-green-800" : "bg-green-600"
+        }`}>
+          {opt.badge}
+        </span>
       )}
-      {/* Radio */}
-      <div style={{ width: 20, height: 20, borderRadius: "50%", border: `2px solid ${selected ? "#2d7a4f" : "#d1d5db"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "border .2s" }}>
-        {selected && <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#2d7a4f" }} />}
+      
+      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+        selected ? "border-green-600" : "border-slate-300"
+      }`}>
+        {selected && <div className="w-2.5 h-2.5 rounded-full bg-green-600" />}
       </div>
-      {/* Icon */}
-      <div style={{ width: 40, height: 40, borderRadius: 10, background: selected ? "#dcfce7" : "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .2s" }}>
-        <Icon size={18} color={selected ? "#2d7a4f" : "#9ca3af"} strokeWidth={1.8} />
+      
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+        selected ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-400"
+      }`}>
+        <Icon size={20} strokeWidth={selected ? 2 : 1.8} />
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: "#1a1a2e", marginBottom: 2 }}>{opt.label}</div>
-        <div style={{ fontSize: 12, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
-          <Clock size={10} /> {opt.sub}
+      
+      <div className="flex-1">
+        <div className="font-bold text-sm text-slate-900 mb-0.5">{opt.label}</div>
+        <div className="text-xs text-slate-500 flex items-center gap-1">
+          <Clock size={11} /> {opt.sub}
         </div>
       </div>
-      <div style={{ fontWeight: 800, fontSize: 15, color: selected ? "#2d7a4f" : "#374151", flexShrink: 0 }}>{fmtPrice(opt.price)}</div>
-    </div>
-  );
-}
-
-/* ─── PAYMENT OPTION ────────────────────────────────────── */
-function PayOpt({ opt, selected, onSelect }) {
-  const [hov, setHov] = useState(false);
-  const { Icon } = opt;
-  return (
-    <div
-      onClick={() => onSelect(opt.id)}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "14px 16px", borderRadius: 12, cursor: "pointer",
-        border: `2px solid ${selected ? "#2d7a4f" : hov ? "#d1d5db" : "#e5e7eb"}`,
-        background: selected ? "linear-gradient(135deg,#f0fdf4,#e8f5ee)" : hov ? "#f9fafb" : "#fff",
-        transition: "all .2s",
-      }}
-    >
-      <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${selected ? "#2d7a4f" : "#d1d5db"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        {selected && <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#2d7a4f" }} />}
+      
+      <div className={`font-extrabold text-sm sm:text-base shrink-0 ${
+        selected ? "text-green-700" : "text-slate-700"
+      }`}>
+        {fmtPrice(opt.price)}
       </div>
-      <Icon size={24} color="#1a1a2e" strokeWidth={1.5} />
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: "#1a1a2e" }}>{opt.label}</div>
-        <div style={{ fontSize: 11, color: "#9ca3af" }}>{opt.sub}</div>
-      </div>
-      {selected && <CheckCircle2 size={16} color="#2d7a4f" />}
     </div>
   );
 }
 
 /* ─── NAV BUTTONS ───────────────────────────────────────── */
-function NavBtns({ onBack, backLabel = "Kembali", onNext, nextLabel, isLast, total }) {
-  const [hov, setHov] = useState(false);
+function NavBtns({ onBack, backLabel = "Kembali", onNext, nextLabel, isLast, total, submitting }) {
   return (
-    <div style={{ display: "flex", gap: 12, marginTop: 28, paddingTop: 24, borderTop: "1px solid #f3f4f6" }}>
-      <button onClick={onBack} style={{
-        display: "flex", alignItems: "center", gap: 7,
-        padding: "12px 20px", border: "1.5px solid #e5e7eb",
-        borderRadius: 10, background: "#fff", color: "#6b7280",
-        fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-        transition: "all .2s",
-      }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = "#1a5c38"; e.currentTarget.style.color = "#1a5c38"; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
+    <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 mt-8 pt-6 border-t border-slate-100">
+      <button 
+        onClick={onBack} 
+        disabled={submitting}
+        className="flex items-center justify-center gap-2 px-5 py-3.5 border-2 border-slate-200 rounded-xl bg-white text-slate-600 font-bold text-sm hover:border-slate-300 hover:bg-slate-50 transition-all disabled:opacity-50"
       >
-        <ArrowLeft size={15} /> {backLabel}
+        <ArrowLeft size={16} /> {backLabel}
       </button>
-      <button onClick={onNext}
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        style={{
-          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          padding: "13px", border: "none", borderRadius: 10,
-          background: isLast
-            ? (hov ? "#fbbf24" : "linear-gradient(135deg,#f59e0b,#fbbf24)")
-            : (hov ? "#1a5c38" : "linear-gradient(135deg,#1a5c38,#2d7a4f)"),
-          color: isLast ? "#1a1a2e" : "#fff",
-          fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-          boxShadow: isLast
-            ? (hov ? "0 8px 24px rgba(251,191,36,.4)" : "0 4px 14px rgba(245,158,11,.25)")
-            : (hov ? "0 8px 24px rgba(26,92,56,.35)" : "0 4px 14px rgba(26,92,56,.2)"),
-          transform: hov ? "translateY(-1px)" : "none",
-          transition: "all .2s",
-        }}
+      
+      <button 
+        onClick={onNext}
+        disabled={submitting}
+        className={`flex-1 flex items-center justify-center gap-2 p-3.5 rounded-xl font-bold text-sm sm:text-base transition-all ${
+          isLast 
+            ? "bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 hover:shadow-lg hover:shadow-amber-500/30 hover:-translate-y-0.5" 
+            : "bg-gradient-to-br from-green-700 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-600/30 hover:-translate-y-0.5"
+        } disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none`}
       >
-        {isLast ? <Lock size={16} /> : null}
-        {isLast ? `Bayar ${fmtPrice(total)}` : nextLabel}
-        {!isLast && <ChevronRight size={16} />}
+        {submitting ? (
+          <>
+            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            Memproses...
+          </>
+        ) : (
+          <>
+            {isLast && <ShieldCheck size={18} />}
+            {isLast ? `Bayar ${fmtPrice(total)} (Midtrans)` : nextLabel}
+            {!isLast && <ChevronRight size={18} />}
+          </>
+        )}
       </button>
     </div>
   );
@@ -219,93 +175,179 @@ function NavBtns({ onBack, backLabel = "Kembali", onNext, nextLabel, isLast, tot
 /* ─── ORDER SUMMARY ─────────────────────────────────────── */
 function OrderSummary({ sub, ship, total, cart }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 18, padding: 28, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,.04)", position: "sticky", top: 24 }}>
-      <h3 style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a1a2e", margin: "0 0 20px", paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
+    <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm lg:sticky lg:top-6">
+      <h3 className="font-bold text-lg text-slate-900 mb-5 pb-4 border-b border-slate-100 font-jakarta">
         Ringkasan Pesanan
       </h3>
 
-      {cart.map(item => {
-        const p = item.productId;
-        if (!p) return null;
-        return (
-          <div key={item._id} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
-            <div style={{ width: 46, height: 46, borderRadius: 10, background: "#f3f4f6", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
-              {p.image ? (
-                <img src={p.image} alt={p.title || p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <ImageOff size={24} color="#9ca3af" />
-              )}
+      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+        {cart.map(item => {
+          const p = item.productId;
+          if (!p) return null;
+          return (
+            <div key={item._id} className="flex items-start gap-3">
+              <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                {p.image ? (
+                  <img src={p.image} alt={p.title || p.name} className="w-full h-full object-cover" />
+                ) : (
+                  <ImageOff size={20} className="text-slate-400" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="text-sm font-semibold text-slate-900 leading-tight mb-1 truncate">{p.title || p.name}</div>
+                <div className="text-xs text-slate-500">Qty: {item.qty}</div>
+              </div>
+              <div className="text-sm font-bold text-slate-900 shrink-0 pl-2 pt-0.5">
+                {fmtPrice(p.price * item.qty)}
+              </div>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e", lineHeight: 1.4, marginBottom: 2 }}>{p.title || p.name}</div>
-              <div style={{ fontSize: 11, color: "#9ca3af" }}>Qty: {item.qty}</div>
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", flexShrink: 0, paddingLeft: 8 }}>{fmtPrice(p.price * item.qty)}</div>
-          </div>
-        );
-      })}
-
-      <div style={{ height: 1, background: "#f3f4f6", margin: "16px 0" }} />
-
-      {[
-        { label: "Subtotal", value: fmtPrice(sub) },
-        { label: "Ongkos Kirim", value: ship ? fmtPrice(ship.price) : "—" },
-      ].map(r => (
-        <div key={r.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6b7280", marginBottom: 8 }}>
-          <span>{r.label}</span><span>{r.value}</span>
-        </div>
-      ))}
-
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, color: "#1a1a2e", marginTop: 14, paddingTop: 14, borderTop: "2px solid #1a1a2e", fontFamily: "'Quicksand', sans-serif" }}>
-        <span>Total</span>
-        <span style={{ color: "#2d7a4f" }}>{fmtPrice(total)}</span>
+          );
+        })}
       </div>
 
-      {/* Security badge */}
-      <div style={{ marginTop: 18, background: "#f0fdf4", borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, border: "1px solid #bbf7d0" }}>
-        <ShieldCheck size={16} color="#2d7a4f" flexShrink={0} />
-        <p style={{ fontSize: 11, color: "#6b7280", margin: 0, lineHeight: 1.6 }}>
-          Transaksi diamankan oleh <strong style={{ color: "#1a5c38" }}>Midtrans SSL</strong>. Data kamu terenkripsi end-to-end.
+      <div className="h-px bg-slate-100 my-5" />
+
+      <div className="space-y-2 mb-5">
+        <div className="flex justify-between text-sm text-slate-600">
+          <span>Subtotal produk</span>
+          <span className="font-medium text-slate-900">{fmtPrice(sub)}</span>
+        </div>
+        <div className="flex justify-between text-sm text-slate-600">
+          <span>Ongkos Kirim</span>
+          <span className="font-medium text-slate-900">{ship ? fmtPrice(ship.price) : "—"}</span>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center pt-4 border-t-2 border-slate-800 mt-2">
+        <span className="font-bold text-lg text-slate-900 font-jakarta">Total</span>
+        <span className="font-bold text-xl text-green-700">{fmtPrice(total)}</span>
+      </div>
+
+      <div className="mt-6 bg-green-50 rounded-xl p-4 flex items-start gap-3 border border-green-100">
+        <ShieldCheck size={20} className="text-green-600 shrink-0 mt-0.5" />
+        <p className="text-xs text-slate-600 leading-relaxed m-0">
+          Transaksi ini diamankan oleh <strong className="text-green-800">Midtrans SSL</strong>. Berbagai metode pembayaran tersedia (QRIS, VA, E-Wallet).
         </p>
       </div>
     </div>
   );
 }
 
-const CheckoutPage = () => {
-  const { cart, cartSubtotal } = useCart();
+export default function CheckoutPage() {
+  const { cart, cartSubtotal, clearCartState } = useCart();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "", phone: "", address: "", city: "", province: "",
-    postalCode: "", shipping: "jne-reg", payment: "qris",
+    postalCode: "", shipping: "jne-reg",
   });
+  
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const sub = cartSubtotal;
   const ship = shippingOpts.find(s => s.id === form.shipping);
   const total = sub + (ship?.price || 0);
 
+  const handleCheckout = async () => {
+    if (!form.name || !form.phone || !form.address || !form.city || !form.province || !form.postalCode) {
+      toast.error("Mohon lengkapi semua field alamat terlebih dahulu.");
+      setStep(1);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const reqBody = {
+        shippingAddress: {
+          name: form.name,
+          phone: form.phone,
+          address: form.address,
+          city: form.city,
+          province: form.province,
+          postalCode: form.postalCode,
+        },
+        shippingMethod: {
+          label: ship?.label || "JNE Regular",
+          price: ship?.price || 0,
+        },
+        paymentMethod: "midtrans", // backend will process via midtrans
+      };
+
+      const res = await ordersAPI.create(reqBody);
+
+      if (res.data.success) {
+        const snapToken = res.data.snapToken;
+
+        // Clear local cart
+        clearCartState();
+
+        if (snapToken && window.snap) {
+          window.snap.pay(snapToken, {
+            onSuccess: () => navigate("/orders"),
+            onPending: () => {
+              toast.info("Pembayaran menunggu konfirmasi. Silakan cek status di halaman pesanan.");
+              navigate("/orders");
+            },
+            onError: () => {
+              toast.error("Pembayaran gagal. Silakan coba bayar kembali dari halaman pesanan.");
+              navigate("/orders");
+            },
+            onClose: () => navigate("/orders"),
+          });
+        } else {
+          toast.success("Pesanan berhasil dibuat! Segera lakukan pembayaran.");
+          navigate("/orders");
+        }
+      } else {
+        toast.error("Gagal: " + res.data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || "Terjadi kesalahan sistem";
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (cart.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6">
+        <ShoppingCart size={48} className="text-slate-300 mb-4" />
+        <h2 className="text-xl font-bold text-slate-800 mb-2">Checkout Kosong</h2>
+        <p className="text-slate-500 mb-6 text-center">Silakan tambahkan produk ke keranjang terlebih dahulu.</p>
+        <button 
+          onClick={() => navigate('/products')}
+          className="px-6 py-3 bg-green-700 text-white font-bold rounded-xl hover:bg-green-800 transition-colors"
+        >
+          Belanja Sekarang
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-slate-50 font-jakarta pb-24">
 
       {/* ── HEADER ── */}
-      <div style={{ background: "linear-gradient(135deg,#1a5c38,#2d7a4f)" }}>
-        <div style={{ maxWidth: 1060, margin: "0 auto", padding: "18px 24px" }}>
-          {/* Breadcrumb */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, fontSize: 12, color: "rgba(255,255,255,.5)" }}>
-            <Link to="/" style={{ color: "#a8e6c3", textDecoration: "none", fontWeight: 600 }}>Beranda</Link>
+      <div className="bg-gradient-to-br from-green-800 to-green-700 pt-6">
+        <div className="max-w-5xl mx-auto px-6 pb-6">
+          <div className="flex items-center gap-2 text-xs font-semibold text-white/60 mb-4">
+            <Link to="/" className="text-green-200 hover:text-white transition-colors">Beranda</Link>
             <ChevronRight size={12} />
-            <Link to="/cart" style={{ color: "#a8e6c3", textDecoration: "none", fontWeight: 600 }}>Keranjang</Link>
+            <Link to="/cart" className="text-green-200 hover:text-white transition-colors">Keranjang</Link>
             <ChevronRight size={12} />
-            <span style={{ color: "#fff" }}>Checkout</span>
+            <span className="text-white">Checkout</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <PawPrint size={20} color="#fff" />
+          
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
+              <Lock size={24} className="text-white" />
             </div>
             <div>
-              <h1 style={{ fontFamily: "'Quicksand', sans-serif", color: "#fff", margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: "-.02em" }}>Checkout</h1>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,.55)" }}>{cart.length} produk · {fmtPrice(total)}</span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Checkout</h1>
+              <span className="text-sm font-medium text-white/70">{cart.length} produk · {fmtPrice(total)}</span>
             </div>
           </div>
         </div>
@@ -313,126 +355,88 @@ const CheckoutPage = () => {
       </div>
 
       {/* ── BODY ── */}
-      <div style={{ maxWidth: 1060, margin: "28px auto", padding: "0 20px 60px", display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, alignItems: "start" }}>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+          
+          {/* ── LEFT PANEL ── */}
+          <div className="w-full lg:flex-1">
+            
+            {/* STEP 1: Alamat */}
+            {step === 1 && (
+              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-1.5 font-jakarta">
+                    <MapPin size={22} className="text-green-700" /> Alamat Pengiriman
+                  </h2>
+                  <p className="text-sm text-slate-500">Pastikan alamat dan data diri sudah benar</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  <Field label="Nama Lengkap" icon={User}>
+                    <Input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Nama penerima" />
+                  </Field>
+                  <Field label="No. Telepon" icon={Phone}>
+                    <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="08xx xxxx xxxx" />
+                  </Field>
+                  <Field label="Alamat Lengkap" icon={Home} full>
+                    <Input as="textarea" value={form.address} onChange={e => set("address", e.target.value)} placeholder="Nama jalan, blok, no. rumah, RT/RW, kelurahan..." rows={3} />
+                  </Field>
+                  <Field label="Kota" icon={Building2}>
+                    <Input value={form.city} onChange={e => set("city", e.target.value)} placeholder="Misal: Bandar Lampung" />
+                  </Field>
+                  <Field label="Provinsi" icon={Map}>
+                    <Input value={form.province} onChange={e => set("province", e.target.value)} placeholder="Misal: Lampung" />
+                  </Field>
+                  <Field label="Kode Pos" icon={Hash} full>
+                    <Input value={form.postalCode} onChange={e => set("postalCode", e.target.value)} placeholder="35xxx" />
+                  </Field>
+                </div>
+                
+                <NavBtns
+                  onBack={() => navigate('/cart')}
+                  backLabel={<span className="flex items-center gap-1.5"><ArrowLeft size={16} /> Ke Keranjang</span>}
+                  onNext={() => setStep(2)}
+                  nextLabel="Pilih Pengiriman"
+                />
+              </div>
+            )}
 
-        {/* ── LEFT PANEL ── */}
-        <div>
+            {/* STEP 2: Pengiriman */}
+            {step === 2 && (
+              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-1.5 font-jakarta">
+                    <Truck size={22} className="text-green-700" /> Metode Pengiriman
+                  </h2>
+                  <p className="text-sm text-slate-500">Pilih kurir yang sesuai dengan kebutuhanmu</p>
+                </div>
+                
+                <div className="flex flex-col gap-3">
+                  {shippingOpts.map(opt => (
+                    <ShipOpt key={opt.id} opt={opt} selected={form.shipping === opt.id} onSelect={v => set("shipping", v)} />
+                  ))}
+                </div>
+                
+                <NavBtns 
+                  onBack={() => setStep(1)} 
+                  backLabel="Ubah Alamat"
+                  onNext={handleCheckout} 
+                  isLast 
+                  total={total}
+                  submitting={submitting}
+                />
+              </div>
+            )}
+            
+          </div>
 
-          {/* STEP 1: Alamat */}
-          {step === 1 && (
-            <div style={{ background: "#fff", borderRadius: 18, padding: 32, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
-              <div style={{ marginBottom: 24 }}>
-                <h2 style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 20, fontWeight: 800, color: "#1a1a2e", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <MapPin size={20} color="#2d7a4f" /> Alamat Pengiriman
-                </h2>
-                <p style={{ margin: 0, fontSize: 13, color: "#9ca3af" }}>Pastikan alamat sudah benar sebelum melanjutkan</p>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <Field label="Nama Lengkap" icon={User}>
-                  <Input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Nama penerima" />
-                </Field>
-                <Field label="No. Telepon" icon={Phone}>
-                  <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+62 8xx xxxx xxxx" />
-                </Field>
-                <Field label="Alamat Lengkap" icon={Home} full>
-                  <Input as="textarea" value={form.address} onChange={e => set("address", e.target.value)} placeholder="Nama jalan, blok, no. rumah, RT/RW..." rows={3} />
-                </Field>
-                <Field label="Kota" icon={Building2}>
-                  <Input value={form.city} onChange={e => set("city", e.target.value)} placeholder="Bandar Lampung" />
-                </Field>
-                <Field label="Provinsi" icon={Map}>
-                  <Input value={form.province} onChange={e => set("province", e.target.value)} placeholder="Lampung" />
-                </Field>
-                <Field label="Kode Pos" icon={Hash}>
-                  <Input value={form.postalCode} onChange={e => set("postalCode", e.target.value)} placeholder="35111" />
-                </Field>
-              </div>
-              <NavBtns
-                onBack={() => { }}
-                backLabel={<Link to="/cart" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 6 }}><ArrowLeft size={15} /> Keranjang</Link>}
-                onNext={() => setStep(2)}
-                nextLabel="Pilih Pengiriman"
-              />
-            </div>
-          )}
-
-          {/* STEP 2: Pengiriman */}
-          {step === 2 && (
-            <div style={{ background: "#fff", borderRadius: 18, padding: 32, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
-              <div style={{ marginBottom: 24 }}>
-                <h2 style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 20, fontWeight: 800, color: "#1a1a2e", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <Truck size={20} color="#2d7a4f" /> Metode Pengiriman
-                </h2>
-                <p style={{ margin: 0, fontSize: 13, color: "#9ca3af" }}>Pilih kurir yang sesuai dengan kebutuhanmu</p>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {shippingOpts.map(opt => (
-                  <ShipOpt key={opt.id} opt={opt} selected={form.shipping === opt.id} onSelect={v => set("shipping", v)} />
-                ))}
-              </div>
-              <NavBtns onBack={() => setStep(1)} onNext={() => setStep(3)} nextLabel="Pilih Pembayaran" />
-            </div>
-          )}
-
-          {/* STEP 3: Pembayaran */}
-          {step === 3 && (
-            <div style={{ background: "#fff", borderRadius: 18, padding: 32, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
-              <div style={{ marginBottom: 24 }}>
-                <h2 style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 20, fontWeight: 800, color: "#1a1a2e", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <CreditCard size={20} color="#2d7a4f" /> Metode Pembayaran
-                </h2>
-                <p style={{ margin: 0, fontSize: 13, color: "#9ca3af" }}>Transaksi aman menggunakan Midtrans</p>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {paymentOpts.map(opt => (
-                  <PayOpt key={opt.id} opt={opt} selected={form.payment === opt.id} onSelect={v => set("payment", v)} />
-                ))}
-              </div>
-              <NavBtns
-                onBack={() => setStep(2)}
-                onNext={async () => {
-                  try {
-                    const reqBody = {
-                      items: cart.map(item => ({
-                        productId: item.productId._id,
-                        qty: item.qty,
-                        price: item.productId.price
-                      })),
-                      totalAmount: total,
-                      paymentMethod: form.payment,
-                      shippingAddress: {
-                        name: form.name,
-                        phone: form.phone,
-                        street: form.address,
-                        city: form.city,
-                        province: form.province,
-                        postalCode: form.postalCode
-                      }
-                    };
-                    const res = await ordersAPI.create(reqBody);
-                    if (res.data.success) {
-                      alert('Pesanan berhasil dibuat! ID: ' + res.data.data._id);
-                      window.location.href = '/orders'; // Navigate to orders page
-                    } else {
-                      alert('Gagal: ' + res.data.message);
-                    }
-                  } catch (err) {
-                    console.error(err);
-                    alert('Terjadi kesalahan sistem');
-                  }
-                }}
-                isLast
-                total={total}
-              />
-            </div>
-          )}
+          {/* ── RIGHT: SUMMARY ── */}
+          <div className="w-full lg:w-[360px] shrink-0">
+            <OrderSummary sub={sub} ship={ship} total={total} cart={cart} />
+          </div>
+          
         </div>
-
-        {/* ── RIGHT: SUMMARY ── */}
-        <OrderSummary sub={sub} ship={ship} total={total} cart={cart} />
       </div>
     </div>
   );
-};
-
-export default CheckoutPage;
+}

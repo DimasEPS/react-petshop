@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { adminProductsAPI } from "@/services/api";
+import { exportToCSV } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,12 +19,12 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Loader2, ImagePlus, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ImagePlus, Search, Download } from "lucide-react";
 
 const categories = ["Anjing", "Kucing", "Kelinci", "Aksesoris", "Makanan"];
 
 const emptyForm = {
-  image: "", title: "", description: "", category: "",
+  image: "", title: "", description: "", categories: [],
   brand: "", price: "", salePrice: "", stock: "",
 };
 
@@ -80,7 +81,8 @@ export default function AdminProducts() {
       image: product.image || "",
       title: product.title || "",
       description: product.description || "",
-      category: product.category || "",
+      categories: Array.isArray(product.category) ? product.category : 
+                  (product.category ? [product.category] : []),
       brand: product.brand || "",
       price: product.price?.toString() || "",
       salePrice: product.salePrice?.toString() || "",
@@ -92,14 +94,18 @@ export default function AdminProducts() {
 
   const handleSave = async () => {
     setFormError("");
-    if (!form.title || !form.category || !form.brand || !form.price || !form.stock) {
+    if (!form.title || form.categories.length === 0 || !form.brand || !form.price || !form.stock) {
       setFormError("Please fill in all required fields (title, category, brand, price, stock).");
       return;
     }
     setSaving(true);
     try {
+      const animals = ["kucing", "anjing", "kelinci"];
       const payload = {
         ...form,
+        category: form.categories, // Send as array
+        hewan: form.categories.filter(c => animals.includes(c.toLowerCase())).map(c => c.toLowerCase()),
+        kat: form.categories.filter(c => !animals.includes(c.toLowerCase())),
         price: Number(form.price),
         salePrice: Number(form.salePrice) || 0,
         stock: Number(form.stock),
@@ -129,8 +135,22 @@ export default function AdminProducts() {
 
   const filtered = products.filter((p) =>
     p.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    (Array.isArray(p.category) ? p.category.join(" ") : p.category)?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleExportCSV = () => {
+    const dataToExport = filtered.map(p => ({
+      "Product ID": p._id,
+      "Title": p.title,
+      "Category": Array.isArray(p.category) ? p.category.join(", ") : p.category,
+      "Brand": p.brand,
+      "Price": p.price,
+      "Sale Price": p.salePrice || 0,
+      "Stock": p.stock,
+      "Description": p.description,
+    }));
+    exportToCSV(dataToExport, "admin_products");
+  };
 
   if (loading) {
     return (
@@ -152,14 +172,19 @@ export default function AdminProducts() {
         </Button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExportCSV}>
+          <Download className="mr-2 h-4 w-4" /> Export CSV
+        </Button>
       </div>
 
       <div className="rounded-lg border">
@@ -184,7 +209,15 @@ export default function AdminProducts() {
                   </div>
                 </TableCell>
                 <TableCell className="font-medium max-w-[200px] truncate">{p.title}</TableCell>
-                <TableCell><Badge variant="outline">{p.category}</Badge></TableCell>
+                <TableCell>
+                  {Array.isArray(p.category) ? (
+                    <div className="flex flex-wrap gap-1">
+                      {p.category.map(c => <Badge key={c} variant="outline" className="text-xs">{c}</Badge>)}
+                    </div>
+                  ) : (
+                    <Badge variant="outline">{p.category}</Badge>
+                  )}
+                </TableCell>
                 <TableCell>Rp {p.price?.toLocaleString("id-ID")}</TableCell>
                 <TableCell>{p.salePrice > 0 ? `Rp ${p.salePrice?.toLocaleString("id-ID")}` : "-"}</TableCell>
                 <TableCell>{p.stock}</TableCell>
@@ -247,14 +280,27 @@ export default function AdminProducts() {
               <Textarea id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select value={form.category} onValueChange={(val) => setForm({ ...form, category: val })}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2 col-span-2">
+                <Label>Categories</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {categories.map((c) => (
+                    <label key={c} className="flex items-center gap-2 border rounded-md px-3 py-2 cursor-pointer hover:bg-slate-50">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4"
+                        checked={form.categories.includes(c)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setForm({ ...form, categories: [...form.categories, c] });
+                          } else {
+                            setForm({ ...form, categories: form.categories.filter(cat => cat !== c) });
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{c}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="brand">Brand</Label>

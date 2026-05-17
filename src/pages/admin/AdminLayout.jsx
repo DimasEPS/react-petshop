@@ -15,6 +15,8 @@ import {
   LogOut,
   Menu,
   ShoppingBag,
+  ShoppingCart,
+  CalendarDays,
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,9 +28,19 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
+    title: "Orders",
+    href: "/admin/orders",
+    icon: ShoppingCart,
+  },
+  {
     title: "Products",
     href: "/admin/products",
     icon: Package,
+  },
+  {
+    title: "Bookings",
+    href: "/admin/bookings",
+    icon: CalendarDays,
   },
   {
     title: "Users",

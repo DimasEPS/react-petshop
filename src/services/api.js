@@ -35,6 +35,23 @@ export const adminUsersAPI = {
   getDashboardStats: () => api.get("/admin/users/dashboard"),
 };
 
+// Admin Orders API
+export const adminOrdersAPI = {
+  getAll: () => api.get("/admin/orders/get"),
+  getDetail: (id) => api.get(`/admin/orders/detail/${id}`),
+  updateStatus: (id, status) =>
+    api.put(`/admin/orders/status/${id}`, { status }),
+  getStats: () => api.get("/admin/orders/stats"),
+};
+
+// Admin Bookings API
+export const adminBookingsAPI = {
+  getAll: () => api.get("/admin/bookings/get"),
+  updateStatus: (id, status) =>
+    api.put(`/admin/bookings/status/${id}`, { status }),
+  getStats: () => api.get("/admin/bookings/stats"),
+};
+
 // Shop Products API (public)
 export const shopProductsAPI = {
   getAll: (params) => api.get("/shop/products", { params }),

@@ -111,8 +111,7 @@ export default function HomePage({ onAddToCart, wishlist, onToggleWishlist, show
         }
       } catch (err) {
         console.error('Failed to fetch featured products:', err);
-        // Fallback to mock data if API fails
-        setFeatured([...products].sort((a, b) => b.sold - a.sold).slice(0, 4));
+        setFeatured([]);
       }
     };
     fetchFeatured();

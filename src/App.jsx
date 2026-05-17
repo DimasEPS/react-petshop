@@ -3,6 +3,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+
 // Auth & Admin Pages
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
@@ -11,6 +14,8 @@ import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminProducts from "@/pages/admin/AdminProducts";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminOrders from "@/pages/admin/AdminOrders";
+import AdminBookings from "@/pages/admin/AdminBookings";
 
 // User Pages & Components
 import Navbar from './components/Navbar';
@@ -73,9 +78,7 @@ function App() {
 
   // Fungsi Notifikasi
   const showNotif = useCallback((msg) => {
-    setNotif(msg);
-    setNotifVisible(true);
-    setTimeout(() => setNotifVisible(false), 2500);
+    toast(msg);
   }, []);
 
   // Fungsi Wishlist
@@ -104,11 +107,7 @@ function App() {
 
   return (
     <>
-      {/* Overlay Notifikasi Global */}
-      <div className={`notification ${notifVisible ? 'show' : ''}`} style={notificationStyle}>
-        {notif}
-      </div>
-
+      <Toaster />
       <Routes>
         {/* ===== Auth & Admin Routes ===== */}
         <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
@@ -117,7 +116,9 @@ function App() {
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="orders" element={<AdminOrders />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="bookings" element={<AdminBookings />} />
           <Route path="users" element={<AdminUsers />} />
         </Route>
 
@@ -140,20 +141,5 @@ function App() {
     </>
   );
 }
-
-// Inline style sederhana untuk notifikasi
-const notificationStyle = {
-  position: 'fixed',
-  top: '20px',
-  right: '20px',
-  backgroundColor: '#1a7a4a',
-  color: 'white',
-  padding: '12px 24px',
-  borderRadius: '12px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  zIndex: 1000,
-  transition: 'all 0.3s ease',
-  display: 'none'
-};
 
 export default App;

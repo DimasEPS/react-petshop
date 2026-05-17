@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { adminUsersAPI } from "@/services/api";
+import { exportToCSV } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Trash2, Search } from "lucide-react";
+import { Trash2, Search, Download } from "lucide-react";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -41,6 +42,17 @@ export default function AdminUsers() {
     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleExportCSV = () => {
+    const dataToExport = filtered.map(u => ({
+      "User ID": u._id,
+      "Name": u.userName,
+      "Email": u.email,
+      "Role": u.role,
+      "Joined Date": u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : "-"
+    }));
+    exportToCSV(dataToExport, "admin_users");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -56,14 +68,19 @@ export default function AdminUsers() {
         <p className="text-muted-foreground mt-1">{users.length} registered users</p>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search users..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExportCSV}>
+          <Download className="mr-2 h-4 w-4" /> Export CSV
+        </Button>
       </div>
 
       <div className="rounded-lg border">

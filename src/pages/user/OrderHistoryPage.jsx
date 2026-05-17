@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ordersAPI } from '../../services/api';
+import { ordersAPI, bookingAPI } from '../../services/api';
+import { toast } from 'sonner';
 import {
   PawPrint, Search, ChevronDown, ChevronUp, ArrowLeft,
   Clock, CheckCircle2, Package, Truck, XCircle,
@@ -11,28 +12,28 @@ import {
 /* ─── STATUS CONFIG ─────────────────────────────────────── */
 const statusConfig = {
   "Menunggu Pembayaran": {
-    color: "#b45309", bg: "#fef3c7", border: "#fde68a",
-    Icon: Clock, gradient: "linear-gradient(135deg,#fef3c7,#fde68a)"
+    bgClass: "bg-amber-100", textClass: "text-amber-700", borderClass: "border-amber-200",
+    Icon: Clock
   },
-  "Dikonfirmasi": {
-    color: "#0369a1", bg: "#e0f2fe", border: "#bae6fd",
-    Icon: CheckCircle2, gradient: "linear-gradient(135deg,#e0f2fe,#bae6fd)"
+  "Menunggu Konfirmasi": {
+    bgClass: "bg-sky-100", textClass: "text-sky-700", borderClass: "border-sky-200",
+    Icon: CheckCircle2
   },
   "Diproses": {
-    color: "#7c3aed", bg: "#ede9fe", border: "#ddd6fe",
-    Icon: Package, gradient: "linear-gradient(135deg,#ede9fe,#ddd6fe)"
+    bgClass: "bg-violet-100", textClass: "text-violet-700", borderClass: "border-violet-200",
+    Icon: Package
   },
   "Dikirim": {
-    color: "#0f766e", bg: "#ccfbf1", border: "#99f6e4",
-    Icon: Truck, gradient: "linear-gradient(135deg,#ccfbf1,#99f6e4)"
+    bgClass: "bg-teal-100", textClass: "text-teal-700", borderClass: "border-teal-200",
+    Icon: Truck
   },
   "Selesai": {
-    color: "#15803d", bg: "#dcfce7", border: "#bbf7d0",
-    Icon: CheckCircle2, gradient: "linear-gradient(135deg,#dcfce7,#bbf7d0)"
+    bgClass: "bg-emerald-100", textClass: "text-emerald-700", borderClass: "border-emerald-200",
+    Icon: CheckCircle2
   },
   "Dibatalkan": {
-    color: "#b91c1c", bg: "#fee2e2", border: "#fecaca",
-    Icon: XCircle, gradient: "linear-gradient(135deg,#fee2e2,#fecaca)"
+    bgClass: "bg-red-100", textClass: "text-red-700", borderClass: "border-red-200",
+    Icon: XCircle
   },
 };
 
@@ -41,183 +42,135 @@ const fmtPrice = (n) => `Rp ${n.toLocaleString("id-ID")}`;
 const getTotal = (o) => o.items.reduce((s, i) => s + i.price * i.qty, 0) + o.shipping;
 
 /* ─── ACTION BUTTONS ────────────────────────────────────── */
-function ActionBtn({ label, icon: Icon, variant = "primary", color, onClick }) {
-  const [hov, setHov] = useState(false);
+function ActionBtn({ label, icon: Icon, variant = "primary", colorClass, onClick }) {
   const styles = {
-    primary: {
-      bg: hov ? "#1a5c38" : "#2d7a4f", color: "#fff", border: "none",
-      shadow: hov ? "0 6px 20px rgba(26,92,56,.3)" : "0 2px 8px rgba(26,92,56,.15)",
-    },
-    outline: {
-      bg: hov ? "#f9fafb" : "#fff", color: color || "#2d7a4f",
-      border: `1.5px solid ${color || "#2d7a4f"}`,
-      shadow: hov ? "0 4px 12px rgba(0,0,0,.06)" : "none",
-    },
-    ghost: {
-      bg: hov ? "#f3f4f6" : "#fff", color: "#6b7280",
-      border: "1px solid #e5e7eb", shadow: "none",
-    },
-    danger: {
-      bg: hov ? "#fee2e2" : "#fff", color: "#b91c1c",
-      border: "1.5px solid #fecaca", shadow: "none",
-    },
-    yellow: {
-      bg: hov ? "#fcd34d" : "#fbbf24", color: "#1a1a2e",
-      border: "none", shadow: hov ? "0 6px 16px rgba(251,191,36,.4)" : "none",
-    },
+    primary: "bg-green-700 text-white hover:bg-green-800 hover:shadow-md hover:-translate-y-px transition-all",
+    outline: `bg-white ${colorClass || "text-green-700"} border-2 ${colorClass ? "border-current" : "border-green-700"} hover:bg-slate-50 transition-all`,
+    ghost: "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 transition-colors",
+    danger: "bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-colors",
+    yellow: "bg-amber-400 text-slate-900 hover:bg-amber-500 hover:shadow-md hover:-translate-y-px transition-all",
   };
   const st = styles[variant] || styles.primary;
   return (
     <button
       onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 6,
-        padding: "9px 16px", borderRadius: 10, cursor: "pointer",
-        fontWeight: 700, fontSize: 13, fontFamily: "inherit",
-        background: st.bg, color: st.color,
-        border: st.border || "none",
-        boxShadow: st.shadow,
-        transform: hov ? "translateY(-1px)" : "none",
-        transition: "all .2s",
-        whiteSpace: "nowrap",
-      }}
+      className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap ${st}`}
     >
-      {Icon && <Icon size={14} strokeWidth={2.2} />} {label}
+      {Icon && <Icon size={16} strokeWidth={2.2} />} {label}
     </button>
   );
 }
 
 /* ─── ORDER CARD ────────────────────────────────────────── */
-function OrderCard({ order, expanded, onToggle }) {
+function OrderCard({ order, expanded, onToggle, onPay, onCancel }) {
   const cfg = statusConfig[order.status];
   const StatusIcon = cfg.Icon;
   const total = getTotal(order);
 
   return (
-    <div style={{
-      background: "#fff", borderRadius: 18, marginBottom: 14,
-      border: "1px solid #e5e7eb",
-      boxShadow: expanded ? "0 8px 32px rgba(0,0,0,0.08)" : "0 2px 8px rgba(0,0,0,0.04)",
-      overflow: "hidden", transition: "box-shadow .25s",
-    }}>
+    <div className={`bg-white rounded-2xl mb-4 border border-slate-200 overflow-hidden transition-all duration-300 ${
+      expanded ? "shadow-lg shadow-slate-200/50" : "shadow-sm hover:shadow-md"
+    }`}>
       {/* Top accent bar */}
-      <div style={{ height: 3, background: `linear-gradient(90deg,${cfg.color},${cfg.color}88)` }} />
+      <div className={`h-1 w-full ${cfg.bgClass.replace('bg-', 'bg-gradient-to-r from-').replace('100', '400')} to-transparent`} />
 
       {/* Header */}
-      <div style={{ padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontFamily: "'Quicksand', sans-serif", fontWeight: 800, color: "#1a1a2e", fontSize: 15, marginBottom: 4 }}>
-            #{order.id}
+      <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-100">
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-slate-900 text-base mb-1 truncate font-jakarta flex items-center gap-2">
+            {order.items[0].name}
+            {order.items.length > 1 && <span className="text-slate-500 font-medium text-xs bg-slate-100 px-2 py-0.5 rounded-full">+{order.items.length - 1} produk</span>}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "#9ca3af" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><CalendarDays size={11} /> {order.date}</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><CreditCard size={11} /> {order.payment}</span>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-medium text-slate-500">
+            <span className="flex items-center gap-1.5"><CalendarDays size={14} className="text-slate-400" /> {order.date}</span>
+            <span className="flex items-center gap-1.5"><CreditCard size={14} className="text-slate-400" /> {order.payment}</span>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
           {/* Status badge */}
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            background: cfg.bg, color: cfg.color,
-            border: `1.5px solid ${cfg.border}`,
-            padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-          }}>
-            <StatusIcon size={12} strokeWidth={2.5} /> {order.status}
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${cfg.bgClass} ${cfg.textClass} ${cfg.borderClass}`}>
+            <StatusIcon size={14} strokeWidth={2.5} /> {order.status}
           </span>
           {/* Toggle */}
           <button
             onClick={onToggle}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              width: 32, height: 32, borderRadius: "50%",
-              background: expanded ? "#f3f4f6" : "#fff",
-              border: "1.5px solid #e5e7eb", cursor: "pointer",
-              color: "#6b7280", transition: "all .2s",
-            }}
+            className={`w-8 h-8 rounded-full border flex items-center justify-center text-slate-500 transition-colors ${
+              expanded ? "bg-slate-100 border-slate-200" : "bg-white border-slate-200 hover:bg-slate-50"
+            }`}
           >
-            {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
         </div>
       </div>
 
       {/* Preview row */}
-      <div style={{ padding: "0 22px 18px", display: "flex", alignItems: "center", gap: 14 }}>
-        {/* Emoji stack */}
-        <div style={{ display: "flex" }}>
+      <div className="p-4 sm:p-5 flex items-center gap-4 cursor-pointer" onClick={onToggle}>
+        {/* Images stack */}
+        <div className="flex shrink-0">
           {order.items.slice(0, 3).map((item, i) => (
-            <div key={i} style={{
-              width: 42, height: 42, borderRadius: 10,
-              background: "#f3f4f6", border: "2px solid #fff",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 20, marginLeft: i > 0 ? -10 : 0,
-              boxShadow: "0 2px 6px rgba(0,0,0,.08)", overflow: "hidden"
-            }}>
-              {item.image ? <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageOff size={20} color="#9ca3af" />}
+            <div key={i} className={`w-12 h-12 rounded-xl bg-slate-100 border-2 border-white flex items-center justify-center overflow-hidden shadow-sm ${i > 0 ? '-ml-3 sm:-ml-4' : ''} relative z-[${3-i}]`}>
+              {item.image ? <img src={item.image} alt="" className="w-full h-full object-cover" /> : <ImageOff size={20} className="text-slate-400" />}
             </div>
           ))}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {order.items[0].name}
-            {order.items.length > 1 && <span style={{ color: "#9ca3af", fontWeight: 500 }}> +{order.items.length - 1} produk</span>}
+        
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-slate-700 truncate">
+            Order ID: <span className="font-mono text-xs ml-1 text-slate-500">{order.id}</span>
           </div>
         </div>
-        <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 500 }}>Total</div>
-          <div style={{ fontFamily: "'Quicksand', sans-serif", fontWeight: 800, color: "#1a1a2e", fontSize: 16 }}>{fmtPrice(total)}</div>
+        
+        <div className="text-right shrink-0">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total</div>
+          <div className="font-bold text-slate-900 text-base sm:text-lg font-jakarta">{fmtPrice(total)}</div>
         </div>
       </div>
 
       {/* Expanded detail */}
       {expanded && (
-        <div style={{ borderTop: "1px solid #f3f4f6", background: "#f9fafb" }}>
-          <div style={{ padding: "20px 22px" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 12 }}>
-              Rincian Produk
+        <div className="border-t border-slate-100 bg-slate-50/50 animate-in slide-in-from-top-2 duration-200">
+          <div className="p-4 sm:p-5">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Package size={14} /> Rincian Produk
             </div>
-            {order.items.map((item, i) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "12px 0",
-                borderBottom: i < order.items.length - 1 ? "1px solid #e5e7eb" : "none",
-              }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#fff", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, overflow: "hidden" }}>
-                  {item.image ? <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageOff size={24} color="#9ca3af" />}
+            
+            <div className="space-y-3">
+              {order.items.map((item, i) => (
+                <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-3 sm:gap-4 flex-1">
+                    <div className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                      {item.image ? <img src={item.image} alt="" className="w-full h-full object-cover" /> : <ImageOff size={20} className="text-slate-400" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-slate-900 text-sm mb-0.5">{item.name}</div>
+                      <div className="text-slate-500 text-xs font-medium">{item.qty} × {fmtPrice(item.price)}</div>
+                    </div>
+                  </div>
+                  <div className="font-bold text-slate-900 text-sm sm:text-right w-full sm:w-auto text-right pr-2 sm:pr-0">
+                    {fmtPrice(item.price * item.qty)}
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, color: "#1a1a2e", fontSize: 14, marginBottom: 2 }}>{item.name}</div>
-                  <div style={{ color: "#9ca3af", fontSize: 12 }}>{item.qty} × {fmtPrice(item.price)}</div>
-                </div>
-                <div style={{ fontWeight: 800, color: "#1a1a2e", fontSize: 14, flexShrink: 0 }}>
-                  {fmtPrice(item.price * item.qty)}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
 
             {/* Total breakdown */}
-            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #e5e7eb" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6b7280", marginBottom: 8 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Truck size={12} /> Ongkos Kirim</span>
-                <span>{fmtPrice(order.shipping)}</span>
+            <div className="mt-5 pt-4 border-t border-slate-200 border-dashed">
+              <div className="flex justify-between items-center text-sm text-slate-500 mb-3 px-1">
+                <span className="flex items-center gap-1.5"><Truck size={14} /> Ongkos Kirim</span>
+                <span className="font-medium text-slate-700">{fmtPrice(order.shipping)}</span>
               </div>
-              <div style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                background: "#fff", borderRadius: 10, padding: "12px 16px",
-                border: "1px solid #e5e7eb",
-              }}>
-                <span style={{ fontWeight: 700, fontSize: 14, color: "#1a1a2e" }}>Total Pembayaran</span>
-                <span style={{ fontFamily: "'Quicksand', sans-serif", fontWeight: 800, fontSize: 18, color: "#2d7a4f" }}>{fmtPrice(total)}</span>
+              <div className="flex justify-between items-center bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                <span className="font-bold text-sm text-slate-900">Total Pembayaran</span>
+                <span className="font-bold text-xl text-green-700 font-jakarta">{fmtPrice(total)}</span>
               </div>
             </div>
 
             {/* Actions */}
-            <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+            <div className="flex flex-wrap gap-2.5 mt-5">
               {order.status === "Menunggu Pembayaran" && (
                 <>
-                  <ActionBtn label="Bayar Sekarang" icon={CreditCard} variant="yellow" />
-                  <ActionBtn label="Batalkan" icon={XCircle} variant="danger" />
+                  <ActionBtn label="Bayar Sekarang" icon={CreditCard} variant="yellow" onClick={onPay} />
+                  <ActionBtn label="Batalkan" icon={XCircle} variant="danger" onClick={onCancel} />
                 </>
               )}
               {order.status === "Selesai" && (
@@ -227,7 +180,7 @@ function OrderCard({ order, expanded, onToggle }) {
                 </>
               )}
               {order.status === "Dikirim" && (
-                <ActionBtn label="Lacak Pesanan" icon={MapPin} color="#0f766e" variant="outline" />
+                <ActionBtn label="Lacak Pesanan" icon={MapPin} colorClass="text-teal-700" variant="outline" />
               )}
               <ActionBtn label="Hubungi CS" icon={Phone} variant="ghost" />
             </div>
@@ -243,40 +196,113 @@ const OrderHistoryPage = () => {
   const [filterStatus, setFilterStatus] = useState("Semua");
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchFocus, setSearchFocus] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await ordersAPI.getAll();
-        if (res.data.success) {
-          // Map API data to component data structure
-          const mapped = res.data.data.map(o => ({
-            id: o._id,
-            date: new Date(o.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-            status: o.status === 'pending' ? 'Menunggu Pembayaran' :
-              o.status === 'paid' ? 'Diproses' :
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const [ordersRes, bookingsRes] = await Promise.all([
+        ordersAPI.getAll().catch(() => ({ data: { success: false } })),
+        bookingAPI.getAll().catch(() => ({ data: { success: false } }))
+      ]);
+
+      const allData = [];
+
+      if (ordersRes.data && ordersRes.data.success) {
+        const mappedOrders = ordersRes.data.data.map(o => ({
+          type: 'order',
+          id: o._id,
+          midtransToken: o.midtransToken,
+          rawDate: new Date(o.createdAt),
+          date: new Date(o.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          status: o.status === 'pending' ? 'Menunggu Pembayaran' :
+            o.status === 'confirmed' ? 'Menunggu Konfirmasi' :
+              o.status === 'processing' ? 'Diproses' :
                 o.status === 'shipped' ? 'Dikirim' :
                   o.status === 'completed' ? 'Selesai' :
                     o.status === 'cancelled' ? 'Dibatalkan' : 'Diproses',
-            items: o.items.map(i => ({
-              name: i.productId?.title || i.productId?.name || 'Produk',
-              qty: i.qty,
-              price: i.price,
-              image: i.productId?.image
-            })),
-            shipping: 15000, // mock shipping
-            payment: o.paymentMethod || 'QRIS',
-          }));
-          setOrders(mapped);
-        }
-      } catch (err) {
-        console.error('Failed to fetch orders:', err);
+          items: o.items.map(i => ({
+            name: i.title || 'Produk',
+            qty: i.qty,
+            price: i.price,
+            image: i.image || ''
+          })),
+          shipping: o.shippingCost || 0,
+          payment: o.paymentMethod || 'Midtrans',
+        }));
+        allData.push(...mappedOrders);
       }
-    };
+
+      if (bookingsRes.data && bookingsRes.data.success) {
+        const mappedBookings = bookingsRes.data.data.map(b => ({
+          type: 'booking',
+          id: b._id,
+          midtransToken: b.midtransToken,
+          rawDate: new Date(b.createdAt),
+          date: new Date(b.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          status: b.status === 'pending' ? 'Menunggu Pembayaran' :
+            b.status === 'confirmed' ? 'Menunggu Konfirmasi' :
+              b.status === 'completed' ? 'Selesai' :
+                b.status === 'cancelled' ? 'Dibatalkan' : 'Menunggu Konfirmasi',
+          items: [{
+            name: `Layanan: ${b.service} - ${b.petName} (${b.petType})`,
+            qty: 1,
+            price: b.price || 0,
+            image: '' 
+          }],
+          shipping: 0,
+          payment: 'Midtrans',
+        }));
+        allData.push(...mappedBookings);
+      }
+
+      allData.sort((a, b) => b.rawDate - a.rawDate);
+      setOrders(allData);
+    } catch (err) {
+      console.error('Failed to fetch history:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchOrders();
   }, []);
+
+  const handlePay = (order) => {
+    if (order.midtransToken && window.snap) {
+      window.snap.pay(order.midtransToken, {
+        onSuccess: () => fetchOrders(),
+        onPending: () => {
+          toast.info("Pembayaran menunggu konfirmasi.");
+          fetchOrders();
+        },
+        onError: () => {
+          toast.error("Pembayaran gagal atau kadaluarsa.");
+          fetchOrders();
+        },
+        onClose: () => fetchOrders()
+      });
+    } else {
+      toast.error("Sistem pembayaran belum siap atau token tidak ditemukan.");
+    }
+  };
+
+  const handleCancel = async (orderId, type) => {
+    if (window.confirm("Yakin ingin membatalkan transaksi ini?")) {
+      try {
+        const res = type === 'booking' ? await bookingAPI.cancel(orderId) : await ordersAPI.cancel(orderId);
+        if (res.data.success) {
+          toast.success("Pesanan berhasil dibatalkan.");
+          fetchOrders();
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error(err.response?.data?.message || "Gagal membatalkan pesanan.");
+      }
+    }
+  };
 
   const allStatuses = ["Semua", ...Object.keys(statusConfig)];
 
@@ -288,57 +314,43 @@ const OrderHistoryPage = () => {
   });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-slate-50 font-jakarta pb-24">
 
       {/* ── HEADER ── */}
-      <div style={{ background: "linear-gradient(135deg,#1a5c38,#2d7a4f)" }}>
-        <div style={{ maxWidth: 860, margin: "0 auto", padding: "18px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-          <Link to="/profile" style={{
-            display: "flex", alignItems: "center", gap: 6,
-            color: "rgba(255,255,255,.8)", textDecoration: "none",
-            fontSize: 13, fontWeight: 600,
-            background: "rgba(255,255,255,.1)", padding: "6px 12px",
-            borderRadius: 20, border: "1px solid rgba(255,255,255,.2)",
-          }}>
-            <ArrowLeft size={14} /> Profil
-          </Link>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <ShoppingBag size={18} color="#fff" />
+      <div className="bg-gradient-to-br from-green-800 to-green-700">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20 shrink-0">
+              <ShoppingBag size={24} className="text-white" />
             </div>
             <div>
-              <h1 style={{ fontFamily: "'Quicksand', sans-serif", color: "#fff", margin: 0, fontSize: 17, fontWeight: 800, letterSpacing: "-.02em" }}>Riwayat Pesanan</h1>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,.6)" }}>{orders.length} transaksi</span>
+              <h1 className="text-2xl font-bold text-white mb-1">Riwayat Pesanan</h1>
+              <span className="text-sm font-medium text-white/70">{orders.length} transaksi tercatat</span>
             </div>
           </div>
+          <Link to="/profile" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors border border-white/20 w-max">
+            <ArrowLeft size={16} /> Kembali ke Profil
+          </Link>
         </div>
       </div>
 
-      <div style={{ maxWidth: 860, margin: "28px auto", padding: "0 20px 48px" }}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-8">
 
         {/* ── SEARCH & FILTER ── */}
-        <div style={{ background: "#fff", borderRadius: 18, padding: 20, marginBottom: 20, border: "1px solid #e5e7eb", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm mb-6">
           {/* Search input */}
-          <div style={{ position: "relative", marginBottom: 16 }}>
-            <Search size={16} color="#9ca3af" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
+          <div className="relative mb-5">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocus(true)}
-              onBlur={() => setSearchFocus(false)}
               placeholder="Cari nomor order atau nama produk..."
-              style={{
-                width: "100%", padding: "11px 14px 11px 40px",
-                border: `1.5px solid ${searchFocus ? "#2d7a4f" : "#e5e7eb"}`,
-                borderRadius: 12, fontSize: 14, boxSizing: "border-box",
-                outline: "none", fontFamily: "inherit", color: "#1a1a2e",
-                background: "#f9fafb", transition: "border .2s",
-              }}
+              className="w-full pl-11 pr-4 py-3 bg-slate-50 border-[1.5px] border-slate-200 rounded-xl text-sm outline-none text-slate-900 focus:border-green-600 focus:bg-white transition-colors placeholder:text-slate-400"
             />
           </div>
 
           {/* Filter tabs */}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="flex flex-wrap gap-2">
             {allStatuses.map(s => {
               const active = filterStatus === s;
               const cfg = statusConfig[s];
@@ -346,53 +358,56 @@ const OrderHistoryPage = () => {
                 <button
                   key={s}
                   onClick={() => setFilterStatus(s)}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 5,
-                    padding: "6px 14px", borderRadius: 20,
-                    border: `1.5px solid ${active ? (cfg?.color || "#1a5c38") : "#e5e7eb"}`,
-                    background: active ? (cfg?.bg || "#e8f5ee") : "#fff",
-                    color: active ? (cfg?.color || "#1a5c38") : "#6b7280",
-                    fontWeight: active ? 700 : 500,
-                    cursor: "pointer", fontSize: 12,
-                    fontFamily: "inherit", transition: "all .2s",
-                  }}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all ${
+                    active 
+                      ? `${cfg?.bgClass || 'bg-green-100'} ${cfg?.textClass || 'text-green-800'} border-transparent font-bold shadow-sm` 
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 font-medium'
+                  }`}
                 >
-                  {s === "Semua"
-                    ? <><PawPrint size={11} /> Semua ({orders.length})</>
-                    : <><cfg.Icon size={11} strokeWidth={2.5} /> {s}</>
-                  }
+                  {s === "Semua" ? (
+                    <><PawPrint size={12} className={active ? '' : 'text-slate-400'} /> Semua ({orders.length})</>
+                  ) : (
+                    <><cfg.Icon size={12} strokeWidth={active ? 2.5 : 2} className={active ? '' : 'text-slate-400'} /> {s}</>
+                  )}
                 </button>
               );
             })}
+
           </div>
         </div>
 
         {/* ── ORDERS LIST ── */}
-        {filteredOrders.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "64px 24px", background: "#fff", borderRadius: 18, border: "1px solid #e5e7eb" }}>
-            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <Inbox size={32} color="#d1d5db" />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-10 h-10 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mb-4" />
+            <p className="text-slate-500 font-medium text-sm">Memuat riwayat pesanan...</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 sm:p-16 border border-slate-200 text-center shadow-sm">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-5 text-slate-300">
+              <Inbox size={40} />
             </div>
-            <div style={{ fontFamily: "'Quicksand', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a1a2e", marginBottom: 6 }}>Tidak ada pesanan</div>
-            <div style={{ fontSize: 14, color: "#9ca3af", marginBottom: 24 }}>Coba ubah filter atau kata kunci pencarian</div>
-            <Link to="/products" style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              background: "#2d7a4f", color: "#fff",
-              padding: "12px 24px", borderRadius: 12, textDecoration: "none",
-              fontWeight: 700, fontSize: 14,
-            }}>
-              <ShoppingBag size={16} /> Belanja Sekarang
+            <h3 className="font-bold text-xl text-slate-900 mb-2 font-jakarta">Tidak ada pesanan</h3>
+            <p className="text-slate-500 mb-8 max-w-sm mx-auto text-sm">
+              Kamu belum memiliki pesanan dengan status ini atau kata kunci tidak ditemukan.
+            </p>
+            <Link to="/products" className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white font-bold px-6 py-3 rounded-xl transition-all hover:shadow-md hover:-translate-y-0.5">
+              <ShoppingBag size={18} /> Belanja Sekarang
             </Link>
           </div>
         ) : (
-          filteredOrders.map(order => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              expanded={expandedId === order.id}
-              onToggle={() => setExpandedId(expandedId === order.id ? null : order.id)}
-            />
-          ))
+          <div className="space-y-4">
+            {filteredOrders.map(order => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                expanded={expandedId === order.id}
+                onToggle={() => setExpandedId(expandedId === order.id ? null : order.id)}
+                onPay={() => handlePay(order)}
+                onCancel={() => handleCancel(order.id, order.type)}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from '../../context/AuthContext';
+import { toast } from "sonner";
 import { profileAPI } from '../../services/api';
 import {
   User, MapPin, Lock, ShoppingBag, Scissors,
@@ -100,7 +101,6 @@ const ProfilePage = () => {
   const { user, setUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
-  const [saveFlash, setSaveFlash] = useState(false);
   const [profile, setProfile] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -112,10 +112,7 @@ const ProfilePage = () => {
   const [passwords, setPasswords] = useState({ old: "", new: "", confirm: "" });
   const [pwSaved, setPwSaved] = useState(false);
 
-  const savedAddresses = [
-    { id: 1, label: "Rumah", Icon: Home, address: "Jl. Teuku Umar No. 12, Kedaton, Bandar Lampung, 35148", isDefault: true },
-    { id: 2, label: "Kantor", Icon: Briefcase, address: "Jl. Jend. Sudirman No. 55, Enggal, Bandar Lampung, 35119", isDefault: false },
-  ];
+  const readStyle = { padding: "11px 14px", border: "1.5px solid #e5e7eb", borderRadius: 10, fontSize: 14, color: "#374151", background: "#f9fafb" };
 
   const handleSave = async () => {
     try {
@@ -128,14 +125,13 @@ const ProfilePage = () => {
       if (res.data.success) {
         setUser({ ...user, ...res.data.data });
         setEditMode(false);
-        setSaveFlash(true);
-        setTimeout(() => setSaveFlash(false), 2500);
+        toast.success('Profil berhasil diperbarui!');
       } else {
-        alert('Gagal: ' + res.data.message);
+        toast.error('Gagal: ' + res.data.message);
       }
     } catch (err) {
       console.error(err);
-      alert('Terjadi kesalahan.');
+      toast.error('Terjadi kesalahan saat menyimpan profil.');
     }
   };
 
@@ -267,18 +263,6 @@ const ProfilePage = () => {
 
         {/* ── MAIN CONTENT ── */}
         <div style={{ flex: 1, minWidth: 300 }}>
-
-          {/* Save flash */}
-          {saveFlash && (
-            <div style={{
-              background: "#dcfce7", border: "1px solid #bbf7d0", borderRadius: 12,
-              padding: "12px 18px", marginBottom: 16,
-              display: "flex", alignItems: "center", gap: 10,
-              color: "#15803d", fontWeight: 700, fontSize: 14,
-            }}>
-              <Check size={16} /> Profil berhasil disimpan!
-            </div>
-          )}
 
           {/* ── PROFILE TAB ── */}
           {activeTab === "profile" && (

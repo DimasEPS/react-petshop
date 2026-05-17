@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, ShoppingCart, ImageOff, Trash2, Lock, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, ImageOff, Trash2, Lock, ShieldCheck, ChevronRight } from 'lucide-react';
 import { fmtPrice } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 
@@ -11,73 +11,100 @@ export default function CartPage({ showNotif }) {
   const [voucherDisc, setVoucherDisc] = useState(0);
   const [voucherMsg, setVoucherMsg] = useState('');
 
-  const ongkir = cart.length ? 15000 : 0;
-  const total = cartSubtotal + ongkir - voucherDisc;
+  const total = cartSubtotal - voucherDisc;
 
   const applyVoucher = () => {
     const code = voucherCode.trim().toUpperCase();
     if (code === 'PAWMART10') { setVoucherDisc(10000); setVoucherMsg('Voucher PAWMART10: hemat Rp 10.000!'); }
-    else if (code === 'GRATIS') { setVoucherDisc(15000); setVoucherMsg('Voucher GRATIS: ongkir gratis!'); }
     else { setVoucherMsg('Kode voucher tidak valid.'); setVoucherDisc(0); }
   };
 
   if (cart.length === 0) return (
-    <div style={s.cartWrap}>
-      <div className="container">
-        <div style={s.cartEmpty}>
-          <div style={s.emptyIcon}><ShoppingCart size={56} color="#2d7a4f" /></div>
-          <h3 style={s.emptyTitle}>Keranjang Kamu Kosong</h3>
-          <p style={s.emptyDesc}>Yuk, belanja produk terbaik untuk hewan peliharaanmu!</p>
-          <button className="btn-green" onClick={() => navigate('/products')} style={{ marginTop: '16px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><ShoppingBag size={18} /> Mulai Belanja</button>
+    <div className="min-h-[calc(100vh-200px)] bg-slate-50 py-16">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+          <div className="w-24 h-24 mx-auto bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-6">
+            <ShoppingCart size={48} />
+          </div>
+          <h3 className="text-2xl font-bold text-slate-900 mb-3 font-jakarta">Keranjang Kamu Kosong</h3>
+          <p className="text-slate-500 mb-8">Yuk, belanja produk terbaik untuk hewan peliharaanmu!</p>
+          <button 
+            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors" 
+            onClick={() => navigate('/products')}
+          >
+            <ShoppingBag size={18} /> Mulai Belanja
+          </button>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div>
-      <div style={s.cartHeader}>
-        <div className="container">
-          <div style={s.breadcrumb}>
-            <span style={s.breadLink} onClick={() => navigate('/')}>Home</span>
-            <span style={s.breadSep}>›</span>
+    <div className="min-h-screen bg-slate-50 font-jakarta pb-24">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 pt-8 pb-6">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
+            <button onClick={() => navigate('/')} className="font-semibold text-green-700 hover:text-green-800 transition-colors">Home</button>
+            <ChevronRight size={14} className="text-slate-300" />
             <span>Keranjang Belanja</span>
           </div>
-          <h1 style={{ ...s.cartTitle, display: 'flex', alignItems: 'center', gap: '12px' }}><ShoppingCart size={28} color="#2d7a4f" /> Keranjang Belanja <span style={{ fontSize: '16px', fontWeight: 500, color: '#6b7280' }}>({cart.length} item)</span></h1>
+          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+            <ShoppingCart className="text-green-700" size={32} /> 
+            Keranjang Belanja 
+            <span className="text-lg font-medium text-slate-500">({cart.length} item)</span>
+          </h1>
         </div>
       </div>
 
-      <div style={s.cartWrap}>
-        <div className="container" style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-          {/* Items */}
-          <div style={{ flex: 1 }}>
+      {/* Main Content */}
+      <div className="container mx-auto px-4 max-w-6xl mt-8">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          {/* Cart Items */}
+          <div className="flex-1 w-full space-y-4">
             {cart.map(item => {
               const p = item.productId;
               if (!p) return null;
               return (
-                <div key={item._id} style={s.cartItem}>
-                  <div style={{ ...s.cartThumb, padding: 0, overflow: 'hidden' }}>
+                <div key={item._id} className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-5 hover:shadow-md transition-shadow">
+                  <div className="w-full sm:w-28 h-28 shrink-0 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center">
                     {p.image ? (
-                      <img src={p.image} alt={p.title || p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={p.image} alt={p.title || p.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', background: '#f1f5f9' }}><ImageOff size={44} color="#9ca3af" /></div>
+                      <ImageOff className="text-slate-400" size={32} />
                     )}
                   </div>
-                  <div style={s.cartItemInfo}>
-                    <div style={s.cartItemName}>{p.title || p.name}</div>
-                    <div style={s.cartItemCat}>
-                      {p.hewan ? p.hewan.charAt(0).toUpperCase() + p.hewan.slice(1) : p.category}
-                      <span style={s.cartItemCatBadge}>{p.kat || p.brand}</span>
+                  
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-semibold text-lg text-slate-900">{p.title || p.name}</h3>
                     </div>
-                    <div style={s.cartItemPrice}>Harga satuan: <strong style={{ color: '#059669', fontSize: '16px' }}>{fmtPrice(p.price)}</strong></div>
-                    <div style={s.cartItemActions}>
-                      <div style={s.cartQty}>
-                        <button style={s.cqBtn} onClick={() => updateQty(item._id, item.qty - 1)}>−</button>
-                        <div style={s.cqNum}>{item.qty}</div>
-                        <button style={s.cqBtn} onClick={() => updateQty(item._id, item.qty + 1)}>+</button>
+                    
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm text-slate-500">{p.hewan ? p.hewan.charAt(0).toUpperCase() + p.hewan.slice(1) : p.category}</span>
+                      <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-xs font-medium">{p.kat || p.brand}</span>
+                    </div>
+                    
+                    <div className="text-sm text-slate-500 mb-4">
+                      Harga satuan: <strong className="text-emerald-600 text-base">{fmtPrice(p.price)}</strong>
+                    </div>
+                    
+                    <div className="mt-auto pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-center border-2 border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                        <button className="w-9 h-9 flex items-center justify-center text-slate-600 hover:bg-green-700 hover:text-white transition-colors font-bold text-lg" onClick={() => updateQty(item._id, item.qty - 1)}>−</button>
+                        <div className="w-11 h-9 flex items-center justify-center font-bold text-sm bg-white border-x-2 border-slate-200">{item.qty}</div>
+                        <button className="w-9 h-9 flex items-center justify-center text-slate-600 hover:bg-green-700 hover:text-white transition-colors font-bold text-lg" onClick={() => updateQty(item._id, item.qty + 1)}>+</button>
                       </div>
-                      <div style={s.cartSubtotal}>{fmtPrice(p.price * item.qty)}</div>
-                      <button style={s.cartRemove} onClick={() => { removeFromCart(item._id); showNotif?.('Produk dihapus dari keranjang'); }}><Trash2 size={14} /> Hapus</button>
+                      
+                      <div className="font-bold text-emerald-600 text-lg">{fmtPrice(p.price * item.qty)}</div>
+                      
+                      <button 
+                        className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors ml-auto sm:ml-0" 
+                        onClick={() => { removeFromCart(item._id); showNotif?.('Produk dihapus dari keranjang'); }}
+                      >
+                        <Trash2 size={16} /> <span className="hidden sm:inline">Hapus</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -86,64 +113,63 @@ export default function CartPage({ showNotif }) {
           </div>
 
           {/* Summary */}
-          <div style={s.cartSummary}>
-            <div style={s.sumTitle}>Ringkasan Belanja</div>
-            <div style={s.sumRow}><span>Subtotal</span><span>{fmtPrice(cartSubtotal)}</span></div>
-            <div style={s.sumRow}><span>Ongkir (estimasi)</span><span>{fmtPrice(ongkir)}</span></div>
-            <div style={s.sumRow}><span>Diskon voucher</span><span style={{ color: '#dc2626' }}>-{fmtPrice(voucherDisc)}</span></div>
-            <div style={{ ...s.sumRow, ...s.sumTotal }}><span>Total</span><span style={{ color: '#059669' }}>{fmtPrice(Math.max(0, total))}</span></div>
-            <div style={s.voucherWrap}>
-              <input style={s.voucherInput} type="text" placeholder="Kode voucher..." value={voucherCode} onChange={e => setVoucherCode(e.target.value)} />
-              <button style={s.voucherBtn} onClick={applyVoucher}>Pakai</button>
+          <div className="w-full lg:w-[380px] shrink-0 bg-white border border-slate-200 rounded-2xl p-6 lg:sticky lg:top-24 shadow-sm">
+            <h2 className="font-bold text-xl text-slate-900 mb-5 pb-4 border-b border-slate-100">Ringkasan Belanja</h2>
+            
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal</span>
+                <span className="font-medium text-slate-900">{fmtPrice(cartSubtotal)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Ongkir</span>
+                <span className="text-sm italic text-slate-500">Dihitung di checkout</span>
+              </div>
+              {voucherDisc > 0 && (
+                <div className="flex justify-between text-red-500">
+                  <span>Diskon voucher</span>
+                  <span className="font-medium">-{fmtPrice(voucherDisc)}</span>
+                </div>
+              )}
             </div>
-            {voucherMsg && <div style={{ fontSize: '12px', color: voucherDisc > 0 ? '#2d7a4f' : '#dc2626', marginTop: '4px' }}>{voucherMsg}</div>}
-            <button style={s.checkoutBtn} onClick={() => showNotif?.('Menuju halaman checkout...')}><Lock size={16} /> Lanjut ke Checkout</button>
-            <div style={s.securityBadge}><ShieldCheck size={14} /> Pembayaran aman via Midtrans · QRIS · VA · E-Wallet</div>
+            
+            <div className="flex justify-between items-center pt-4 border-t-2 border-slate-100 mb-6">
+              <span className="font-bold text-lg text-slate-900">Total</span>
+              <span className="font-bold text-xl text-emerald-600">{fmtPrice(Math.max(0, total))}</span>
+            </div>
+            
+            <div className="flex gap-2 mb-2">
+              <input 
+                type="text" 
+                placeholder="Kode voucher..." 
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-600/20 transition-all"
+                value={voucherCode} 
+                onChange={e => setVoucherCode(e.target.value)} 
+              />
+              <button 
+                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl font-semibold text-sm transition-colors"
+                onClick={applyVoucher}
+              >
+                Pakai
+              </button>
+            </div>
+            {voucherMsg && <div className={`text-sm mb-6 ${voucherDisc > 0 ? 'text-emerald-600' : 'text-red-500'}`}>{voucherMsg}</div>}
+            
+            <button 
+              className="w-full bg-green-700 hover:bg-green-800 text-white py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-green-700/30 active:scale-[0.98] mt-2" 
+              onClick={() => navigate('/checkout')}
+            >
+              <Lock size={18} /> Lanjut ke Checkout
+            </button>
+            
+            <div className="mt-4 flex items-center justify-center gap-2 p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 text-xs font-medium text-center">
+              <ShieldCheck size={16} className="shrink-0" />
+              <span>Pembayaran aman via Midtrans (QRIS, VA, E-Wallet)</span>
+            </div>
           </div>
+          
         </div>
       </div>
     </div>
   );
 }
-
-const s = {
-  cartHeader: { background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '28px 0 0' },
-  breadcrumb: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#64748b', marginBottom: '12px' },
-  breadLink: { color: '#2d7a4f', fontWeight: 600, cursor: 'pointer', transition: 'color .2s' },
-  breadSep: { color: '#cbd5e1' },
-  cartTitle: { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '28px', fontWeight: 700, color: '#0f172a', paddingBottom: '16px', letterSpacing: '-.01em' },
-  cartWrap: { padding: '32px 0 64px', background: '#f8fafc', minHeight: 'calc(100vh - 200px)' },
-  cartItem: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', display: 'flex', gap: '20px', marginBottom: '16px', transition: 'all .25s', boxShadow: '0 1px 3px rgba(0,0,0,.04)' },
-  cartItemHover: { boxShadow: '0 8px 24px rgba(0,0,0,.08)', borderColor: '#cbd5e1', transform: 'translateY(-2px)' },
-  cartThumb: { width: '100px', height: '100px', borderRadius: '12px', background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '44px' },
-  cartItemInfo: { flex: 1, paddingTop: '4px' },
-  cartItemName: { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '17px', fontWeight: 600, color: '#0f172a', marginBottom: '6px', letterSpacing: '-.01em' },
-  cartItemCat: { fontSize: '13px', color: '#64748b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' },
-  cartItemCatBadge: { background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 500, color: '#475569' },
-  cartItemPrice: { fontSize: '14px', color: '#64748b', marginBottom: '16px' },
-  cartItemActions: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #f1f5f9' },
-  cartQty: { display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#f8fafc' },
-  cqBtn: { width: '36px', height: '36px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '18px', fontWeight: 600, transition: 'all .2s', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  cqBtnHover: { background: '#2d7a4f', color: '#fff' },
-  cqNum: { width: '44px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', color: '#0f172a', background: '#fff', borderLeft: '1.5px solid #e2e8f0', borderRight: '1.5px solid #e2e8f0' },
-  cartSubtotal: { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '16px', fontWeight: 700, color: '#059669' },
-  cartRemove: { background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: '8px 12px', transition: 'all .2s', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' },
-  cartRemoveHover: { background: '#fef2f2', color: '#ef4444' },
-  cartSummary: { flexShrink: 0, width: '360px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '20px', padding: '28px', position: 'sticky', top: '96px', boxShadow: '0 4px 20px rgba(0,0,0,.06)' },
-  sumTitle: { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 700, marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', letterSpacing: '-.01em' },
-  sumRow: { display: 'flex', justifyContent: 'space-between', fontSize: '14px', padding: '10px 0', color: '#64748b' },
-  sumRowIcon: { display: 'flex', alignItems: 'center', gap: '10px' },
-  sumIcon: { width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#64748b' },
-  sumTotal: { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '20px', fontWeight: 700, color: '#0f172a', borderTop: '2px solid #f1f5f9', paddingTop: '16px', marginTop: '12px' },
-  voucherWrap: { display: 'flex', gap: '10px', margin: '20px 0' },
-  voucherInput: { flex: 1, border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px', fontSize: '14px', color: '#0f172a', fontFamily: "'Plus Jakarta Sans', sans-serif", outline: 'none', transition: 'all .2s', background: '#f8fafc' },
-  voucherInputFocus: { borderColor: '#2d7a4f', background: '#fff', boxShadow: '0 0 0 3px rgba(45,122,79,.1)' },
-  voucherBtn: { padding: '14px 24px', border: 'none', borderRadius: '12px', background: 'linear-gradient(135deg, #2d7a4f 0%, #059669 100%)', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: "'Plus Jakarta Sans', sans-serif", whiteSpace: 'nowrap', transition: 'all .25s', boxShadow: '0 2px 8px rgba(45,122,79,.3)' },
-  checkoutBtn: { width: '100%', padding: '18px', background: 'linear-gradient(135deg, #2d7a4f 0%, #059669 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: 700, fontSize: '16px', cursor: 'pointer', marginTop: '20px', fontFamily: "'Plus Jakarta Sans', sans-serif", transition: 'all .25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 14px rgba(45,122,79,.35)', letterSpacing: '-.01em' },
-  checkoutBtnHover: { transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(45,122,79,.4)' },
-  securityBadge: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '16px', padding: '12px', background: '#f0fdf4', borderRadius: '10px', fontSize: '12px', color: '#15803d', fontWeight: 500, border: '1px solid #bbf7d0' },
-  cartEmpty: { textAlign: 'center', padding: '100px 40px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,.05)' },
-  emptyIcon: { width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '56px', margin: '0 auto 24px' },
-  emptyTitle: { fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '24px', fontWeight: 700, color: '#0f172a', marginBottom: '12px', letterSpacing: '-.01em' },
-  emptyDesc: { color: '#64748b', marginBottom: '32px', fontSize: '15px' },
-};
